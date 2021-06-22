@@ -25,6 +25,7 @@ To use the ESA CCI package, you'll need to download it from [here](http://maps.e
 - [X] Run sen2cor in docker container
 
 - [X] Use SRTM
+- [X] Convert output to EWoC ARD format
 - [ ] Create a local ftp mirror of CIGAR srtm ftp in the k8s cluster
 
 - [ ] Get S2 L1C from creodias using dataship with an S2 L1C id 
