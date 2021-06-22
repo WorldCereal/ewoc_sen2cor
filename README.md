@@ -14,10 +14,18 @@ This command will run sen2cor on input L1C S2 and convert the result into ewoc f
 
 The run_s2c.py script is temporary it will be soon updated/improved
 
+Sen2cor aux data:
+
+- DEM: srtm tiles are automatically downloaded by sen2cor from [CIGAR](http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF/)
+- **Not used** ESA CCI package can be added to this container in order to improve the atmospheric correction. This package is quite heavy for GH (5Gb), so the archive need to be downloaded in the container. Be aware that the docker image size will be around 8 Gb. 
+To use the ESA CCI package, you'll need to download it from [here](http://maps.elie.ucl.ac.be/CCI/viewer/download.php), add it to this folder and uncomment the corresponding lines in the Dockerfile.
+
+
 ## TODO
 - [X] Run sen2cor in docker container
 
 - [X] Use SRTM
+- [ ] Create a local ftp mirror of CIGAR srtm ftp in the k8s cluster
 
 - [ ] Get S2 L1C from creodias using dataship with an S2 L1C id 
 
