@@ -12,7 +12,7 @@ docker run -ti --rm -v local_volume/:/work s2c run_s2c.py /work/<S2_SAFE> /work/
 ```
 This command will run sen2cor on input L1C S2 and convert the result into ewoc format 
 
-The run_s2c.py script is temporary it will be soon updated/improved
+🚧 The run_s2c.py script is temporary it will be soon updated/improved
 
 Sen2cor aux data:
 
@@ -26,7 +26,8 @@ To use the ESA CCI package, you'll need to download it from [here](http://maps.e
 
 - [X] Use SRTM
 - [X] Convert output to EWoC ARD format
-- [ ] Create a local ftp mirror of CIGAR srtm ftp in the k8s cluster
+- [ ] Adapt dataship `get_srtm` for sen2cor (use s3 bucket, creo or custom)
+- [ ] Update `run_s2c.py` or create a python package using [pyscaffold](https://github.com/pyscaffold/pyscaffold)
 
 - [ ] Get S2 L1C from creodias using dataship with an S2 L1C id 
 
