@@ -4,13 +4,26 @@
 
 Build
 ```bash
-docker build -t s2c .
+docker build -t ewoc_s2c .
+```
+Parameters:
+```bash
+Usage: run_s2c.py s2c [OPTIONS]
+
+  Sen2cor
+
+Options:
+  -p, --plan TEXT       EWoC Plan in json format
+  -o, --l2a_dir TEXT    Output directory
+  -cfg, --config TEXT   EOdag config file
+  -pv, --provider TEXT  Data provider
+  --help                Show this message and exit.
 ```
 Run
 ```bash
-docker run -ti --rm -v local_volume/:/work s2c run_s2c.py /work/<S2_SAFE> /work/<out_dir>
+ docker run -ti --rm -v Data:/work ewoc_s2c run_s2c.py s2c -p /work/SEN2TEST/arg_21HTC.json -o /work/SEN2TEST/OUT/ -cfg /work/SEN2TEST/eodag_config.yml
 ```
-This command will run sen2cor on input L1C S2 and convert the result into ewoc format 
+This command will run sen2cor on input L1C S2 and convert the result into ewoc format. The level 1 data is **automatically downloaded** from the data provider using dataship
 
 🚧 The run_s2c.py script is temporary it will be soon updated/improved
 
@@ -29,7 +42,7 @@ To use the ESA CCI package, you'll need to download it from [here](http://maps.e
 - [ ] Adapt dataship `get_srtm` for sen2cor (use s3 bucket, creo or custom)
 - [ ] Update `run_s2c.py` or create a python package using [pyscaffold](https://github.com/pyscaffold/pyscaffold)
 
-- [ ] Get S2 L1C from creodias using dataship with an S2 L1C id 
+- [X] Get S2 L1C from creodias using dataship with an S2 L1C id 
 
 - [X] Accept json workplan as an input
 
