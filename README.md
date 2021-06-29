@@ -31,7 +31,7 @@ To use the ESA CCI package, you'll need to download it from [here](http://maps.e
 
 - [ ] Get S2 L1C from creodias using dataship with an S2 L1C id 
 
-- [ ] Accept json workplan as an input
+- [X] Accept json workplan as an input
 
 - [ ] Upload S2 L2A ard directly to creodias bucket
 
