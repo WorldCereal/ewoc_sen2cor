@@ -17,8 +17,6 @@ RUN pip3 install /opt/dataship-0.1.2.tar.gz
 RUN wget -P /opt http://step.esa.int/thirdparties/sen2cor/2.9.0/Sen2Cor-02.09.00-Linux64.run
 RUN chmod +x /opt/Sen2Cor-02.09.00-Linux64.run
 RUN ./opt/Sen2Cor-02.09.00-Linux64.run && rm /opt/Sen2Cor-02.09.00-Linux64.run
-# Source L2A_Bashrc to set sen2cor env vars
-RUN source Sen2Cor-02.09.00-Linux64/L2A_Bashrc
 # Copy custom L2A_GIPP.xml to sen2cor home
 # This file can be copied to tmp and used as a param
 COPY L2A_GIPP.xml /root/sen2cor/2.9/cfg/
@@ -29,5 +27,6 @@ COPY L2A_GIPP.xml /root/sen2cor/2.9/cfg/
 #RUN tar -xvf /tmp/ESACCI-LC-L4-ALL-FOR-SEN2COR.tar -C /tmp/Sen2Cor-02.09.00-Linux64/lib/python2.7/site-packages/sen2cor/aux_data/
 
 ## Copy scripts
-COPY run_s2c.py utils.py /.
+COPY run_s2c.py /.
+COPY utils.py /.
 ENTRYPOINT ["python3"]

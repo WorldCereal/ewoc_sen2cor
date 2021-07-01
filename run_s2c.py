@@ -11,7 +11,7 @@ from dataship.dag.utils import l2a_to_ard, get_product_by_id
 def cli():
     click.secho("Run sen2cor", fg="green",bold=True)
 
-@cli.command('s2c_plan',help="Sen2cor")
+@cli.command('s2c_plan',help="Sen2cor with a full plan as input")
 @click.option('-p', '--plan', help="EWoC Plan in json format")
 @click.option('-o', '--l2a_dir', help="Output directory")
 @click.option('-cfg', '--config', help="EOdag config file")
@@ -40,7 +40,7 @@ def run_plan(plan, l2a_dir,provider,config):
                 clean(out_dir_l1c)
             except:
                 print(f'Something went wrong with {prod["id"]}')
-@cli.command('s2c_id',help="Sen2cor")
+@cli.command('s2c_id',help="Sen2cor for on product using EOdag ID")
 @click.option('-p', '--pid', help="S2 L1C product ID")
 @click.option('-o', '--l2a_dir', help="Output directory")
 @click.option('-cfg', '--config', help="EOdag config file")
