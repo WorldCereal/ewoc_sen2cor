@@ -22,10 +22,16 @@ RUN source Sen2Cor-02.09.00-Linux64/L2A_Bashrc
 # Copy custom L2A_GIPP.xml to sen2cor home
 # This file can be copied to tmp and used as a param
 COPY L2A_GIPP.xml /root/sen2cor/2.9/cfg/
+
+
+# This a temporary fix for srtm
+COPY srtm_25_19.tif /root/sen2cor/2.9/dem/srtm/
+
 # Copy ESA CCI files (6Go)
 #COPY ESACCI-LC-L4-ALL-FOR-SEN2COR.tar /tmp
 # Extract the CCI files in the aux_data in the sen2cor_bin folder
 #RUN tar -xvf /tmp/ESACCI-LC-L4-ALL-FOR-SEN2COR.tar -C /tmp/Sen2Cor-02.09.00-Linux64/lib/python2.7/site-packages/sen2cor/aux_data/
+
 ## Copy scripts
 COPY run_s2c.py utils.py /.
 ENTRYPOINT ["python3"]
