@@ -25,7 +25,7 @@ COPY L2A_GIPP.xml /root/sen2cor/2.9/cfg/
 
 
 # This a temporary fix for srtm
-COPY srtm_25_19.tif /root/sen2cor/2.9/dem/srtm/
+COPY aux/srtm_25_19.tif /root/sen2cor/2.9/dem/srtm/
 
 # Copy ESA CCI files (6Go)
 #COPY ESACCI-LC-L4-ALL-FOR-SEN2COR.tar /tmp
