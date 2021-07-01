@@ -31,7 +31,7 @@
          which then will be inserted in the datastrip metadata -->
     <Generate_DEM_Output>FALSE</Generate_DEM_Output>
     <!-- FALSE: no DEM output, TRUE: store DEM in the AUX data directory -->
-    <Force_Exit_On_DEM_Error>FALSE</Force_Exit_On_DEM_Error>
+    <Force_Exit_On_DEM_Error>TRUE</Force_Exit_On_DEM_Error>
     <!-- FALSE: Processing continues with a flat surface, TRUE: processing will be stopped -->
     <Generate_TCI_Output>FALSE</Generate_TCI_Output>
     <!-- FALSE: no TCI output, TRUE: store TCI in the IMAGE data directory -->
@@ -92,7 +92,7 @@
       <!-- 0: constant, 1: variable visibility -->
       <WV_Watermask>1</WV_Watermask>
       <!-- 0: not replaced, 1: land-average, 2: line-average -->
-      <Cirrus_Correction>FALSE</Cirrus_Correction>
+      <Cirrus_Correction>TRUE</Cirrus_Correction>
       <!-- FALSE: no cirrus correction applied, TRUE: cirrus correction applied -->
       <DEM_Terrain_Correction>TRUE</DEM_Terrain_Correction>
       <!--Use DEM for Terrain Correction, otherwise only used for WVP and AOT -->
