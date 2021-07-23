@@ -21,7 +21,7 @@ def run_plan(plan, l2a_dir,provider,config):
         plan = json.load(f)
     for tile in plan:
         prods = plan[tile]['S2_PROC']['INPUTS']
-        for prod in prods[:2]:
+        for prod in prods:
             out_dir_l1c = os.path.join(l2a_dir, "tmp_L1C", tile)
             out_dir_l2a = os.path.join(l2a_dir, "tmp_L2A", tile)
             if not os.path.exists(out_dir_l1c):
