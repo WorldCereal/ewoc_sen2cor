@@ -28,9 +28,9 @@ def run_plan(plan, l2a_dir,provider,config):
                 os.makedirs(out_dir_l1c)
             if not os.path.exists(out_dir_l2a):
                 os.makedirs(out_dir_l2a)
-            print(f'Download done for {prod["id"]}\n')
             try:
                 get_product_by_id(prod['id'], out_dir_l1c, provider, config_file=config)
+                print(f'Download done for {prod["id"]}\n')
                 l1c_safe_folder = \
                 [os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith('SAFE')][0]
                 l1c_safe_folder = last_safe(l1c_safe_folder)
@@ -52,9 +52,9 @@ def run_id(pid, l2a_dir,provider,config):
             os.makedirs(out_dir_l1c)
         if not os.path.exists(out_dir_l2a):
             os.makedirs(out_dir_l2a)
-        print(f'Download done for {pid}\n')
         try:
             get_product_by_id(pid, out_dir_l1c, provider, config_file=config)
+            print(f'Download done for {pid}\n')
             l1c_safe_folder = \
             [os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith('SAFE')][0]
             l1c_safe_folder = last_safe(l1c_safe_folder)
