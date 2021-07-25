@@ -94,7 +94,7 @@
       <!-- 0: not replaced, 1: land-average, 2: line-average -->
       <Cirrus_Correction>TRUE</Cirrus_Correction>
       <!-- FALSE: no cirrus correction applied, TRUE: cirrus correction applied -->
-      <DEM_Terrain_Correction>TRUE</DEM_Terrain_Correction>
+      <DEM_Terrain_Correction>FALSE</DEM_Terrain_Correction>
       <!--Use DEM for Terrain Correction, otherwise only used for WVP and AOT -->
       <BRDF_Correction>0</BRDF_Correction>
       <!-- 0: no BRDF correction, 1, 2: see IODD for explanation -->
