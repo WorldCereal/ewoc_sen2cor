@@ -1,6 +1,6 @@
-import os
 import shutil
 
+from dataship.dag.s3man import *
 
 
 def run_s2c(l1c_safe,l2a_out):
@@ -15,6 +15,7 @@ def run_s2c(l1c_safe,l2a_out):
     # This should work in container and local env
     s2c_cmd = f"./Sen2Cor-02.09.00-Linux64/bin/L2A_Process {l1c_safe} --output_dir {l2a_out} --resolution 10"
     os.system(s2c_cmd)
+    # TODO instead of getting the first element of this list, select folder using date and tile id from l1 id
     l2a_safe_folder = [os.path.join(l2a_out, fold) for fold in os.listdir(l2a_out) if fold.endswith('SAFE')][0]
     return l2a_safe_folder
 
@@ -33,3 +34,28 @@ def last_safe(safe_folder):
             if dir.endswith('SAFE'):
                 tmp = os.path.join(root,dir)
     return tmp
+
+def get_var_env(var_name):
+    return os.getenv(var_name)
+
+def ewoc_s3_upload():
+    try:
+        # Try to upload to s3 bucket, you'll need to define some env vars needed for the s3 client and destination path
+        s3c = get_s3_client()
+        bucket = get_var_env("BUCKET")
+        local_path = get_var_env("S2C_LP")
+        s3_path = get_var_env("DEST_PREFIX")
+        recursive_upload_dir_to_s3(s3_client=s3c,local_path=local_path,s3_path=s3_path,bucketname=bucket)
+        # <!> Delete output folder after upload
+        clean(local_path)
+    except:
+        print("Could not upload output folder to s3, results saved locally")
+
+def make_tmp_dirs(work_dir):
+    out_dir_in = os.path.join(work_dir, "tmp_in")
+    out_dir_proc = os.path.join(work_dir, "tmp_proc")
+    if not os.path.exists(out_dir_in):
+        os.makedirs(out_dir_in)
+    if not os.path.exists(out_dir_proc):
+        os.makedirs(out_dir_proc)
+    return out_dir_in,out_dir_proc

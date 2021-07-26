@@ -45,12 +45,12 @@ To use the ESA CCI package, you'll need to download it from [here](http://maps.e
 - [X] Use SRTM
 - [X] Convert output to EWoC ARD format
 - [ ] Adapt dataship `get_srtm` for sen2cor (use s3 bucket, creo or custom)
-- [ ] Update `run_s2c.py` or create a python package using [pyscaffold](https://github.com/pyscaffold/pyscaffold)
+- [X] Update `run_s2c.py` or create a python package using [pyscaffold](https://github.com/pyscaffold/pyscaffold)
 
 - [X] Get S2 L1C from creodias using dataship with an S2 L1C id 
 
 - [X] Accept json workplan as an input
 
-- [ ] Upload S2 L2A ard directly to creodias bucket
+- [X] Upload S2 L2A ard directly to creodias bucket
 
 - [ ] Connect to the ewoc postgresql database
