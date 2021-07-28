@@ -24,6 +24,8 @@ def run_plan(plan, l2a_dir, provider, config):
     with open(plan) as f:
         plan = json.load(f)
     for tile in plan:
+        if not os.path.exists(dem_tmp_dir):
+            os.makedirs(dem_tmp_dir)
         custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
         count = 0
         prods = plan[tile]['S2_PROC']['INPUTS']
