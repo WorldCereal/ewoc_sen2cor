@@ -20,10 +20,11 @@ def cli():
 def run_plan(plan, l2a_dir, provider, config):
     if l2a_dir is None:
         l2a_dir = "/work/SEN2TEST/OUT/"
-    count = 0
+
     with open(plan) as f:
         plan = json.load(f)
     for tile in plan:
+        count = 0
         prods = plan[tile]['S2_PROC']['INPUTS']
         for prod in prods:
             out_dir_l1c = os.path.join(l2a_dir, "tmp_L1C", tile)
@@ -45,10 +46,10 @@ def run_plan(plan, l2a_dir, provider, config):
                 count = +1
             except:
                 print(f'Something went wrong with {prod["id"]}')
-    number_of_products = len(prods)
-    print('\n\nEnd of processing ')
-    # Check if
-    print(f'Processed {str(count)} of {str(number_of_products)}')
+        number_of_products = len(prods)
+        print('\n\nEnd of processing ')
+        # Check if
+        print(f'Processed {str(count)} of {str(number_of_products)}')
 
 
 @cli.command('s2c_id', help="Sen2cor for on product using EOdag ID")

@@ -1,6 +1,7 @@
 import shutil
 
 from dataship.dag.s3man import *
+from eotile.eotile_module import main
 
 
 def run_s2c(l1c_safe,l2a_out):
@@ -59,3 +60,6 @@ def make_tmp_dirs(work_dir):
     if not os.path.exists(out_dir_proc):
         os.makedirs(out_dir_proc)
     return out_dir_in,out_dir_proc
+
+def custom_s2c_dem(tile_id):
+    main()
