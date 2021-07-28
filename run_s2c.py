@@ -20,10 +20,11 @@ def cli():
 def run_plan(plan, l2a_dir, provider, config):
     if l2a_dir is None:
         l2a_dir = "/work/SEN2TEST/OUT/"
-
+    dem_tmp_dir = "/work/SEN2TEST/DEM/"
     with open(plan) as f:
         plan = json.load(f)
     for tile in plan:
+        custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
         count = 0
         prods = plan[tile]['S2_PROC']['INPUTS']
         for prod in prods:
@@ -46,6 +47,7 @@ def run_plan(plan, l2a_dir, provider, config):
                 count = +1
             except:
                 print(f'Something went wrong with {prod["id"]}')
+        clean(dem_tmp_dir)
         number_of_products = len(prods)
         print('\n\nEnd of processing ')
         # Check if

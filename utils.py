@@ -84,7 +84,6 @@ def custom_s2c_dem(tile_id,tmp_dir):
         srtm_list.append(os.path.join(tmp_dir,srtm_id,srtm_id+'.tif'))
         srtm_tiles.append(srtm_id)
     sources = []
-
     output_fn = os.path.join(tmp_dir,'mosaic.tif')
     for raster in srtm_list:
         src = rasterio.open(raster)
