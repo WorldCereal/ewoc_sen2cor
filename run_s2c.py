@@ -80,13 +80,15 @@ def run_id(pid, l2a_dir, provider, config):
     ewoc_s3_upload()
 
 @cli.command('s2c_db', help="Sen2cor Postgreqsl mode")
-def run_db():
+@click.option('-e', '--executor', help="Name of the executor")
+@click.option('-f', '--status_filter', default="scheduled", help="Selects tiles that follow that condition")
+def run_db(executor, status_filter):
     l2a_dir = "/work/SEN2TEST/OUT/"
     # Generate temporary folders
     out_dir_l1c,out_dir_l2a = make_tmp_dirs(l2a_dir)
     # Get Sat product by id using eodag
     db_type = "fsmac"
-    tile, _ = get_next_tile(db_type, "Executor_name", "scheduled")
+    tile, _ = get_next_tile(db_type, executor, status_filter)
     pid = tile.products
     get_product_by_id(pid, out_dir_l1c)
     print(f'Download done for {pid}\n')
