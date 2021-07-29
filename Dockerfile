@@ -20,7 +20,7 @@ RUN ./opt/Sen2Cor-02.09.00-Linux64.run && rm /opt/Sen2Cor-02.09.00-Linux64.run
 # Copy custom L2A_GIPP.xml to sen2cor home
 # This file can be copied to tmp and used as a param
 COPY L2A_GIPP.xml /root/sen2cor/2.9/cfg/
-RUN mkdir /root/sen2cor/2.9/dem/srtm
+RUN mkdir -p /root/sen2cor/2.9/dem/srtm
 
 # Copy ESA CCI files (6Go)
 #COPY ESACCI-LC-L4-ALL-FOR-SEN2COR.tar /tmp
