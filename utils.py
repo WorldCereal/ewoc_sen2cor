@@ -1,6 +1,11 @@
+import os
 import shutil
+import zipfile
 
 from dataship.dag.s3man import *
+from eotile.eotile_module import main
+import rasterio
+from rasterio.merge import merge
 
 
 def run_s2c(l1c_safe,l2a_out):
@@ -59,3 +64,36 @@ def make_tmp_dirs(work_dir):
     if not os.path.exists(out_dir_proc):
         os.makedirs(out_dir_proc)
     return out_dir_in,out_dir_proc
+
+def custom_s2c_dem(tile_id,tmp_dir):
+    srt_90 = main(tile_id,no_l8=True, no_s2=True, srtm5x5=True)
+    srt_90 = srt_90[-1]
+    srtm_ids = list(srt_90['id'])
+    bucket = "world-cereal"
+    srtm_list=[]
+    srtm_tiles=[]
+    # download the zip files
+    for srtm_id in srtm_ids:
+        key = os.path.join("srtm90",srtm_id+".zip")
+        outzip = os.path.join(tmp_dir,srtm_id+".zip")
+        download_s3file(key,outzip,bucket)
+        outfold = outzip.replace('.zip','')
+        with zipfile.ZipFile(outzip, 'r') as zip_ref:
+            zip_ref.extractall(outfold)
+        os.remove(outzip)
+        srtm_list.append(os.path.join(tmp_dir,srtm_id,srtm_id+'.tif'))
+        srtm_tiles.append(srtm_id)
+    sources = []
+    output_fn = os.path.join(tmp_dir,'mosaic.tif')
+    for raster in srtm_list:
+        src = rasterio.open(raster)
+        sources.append(src)
+    merge(sources,dst_path=output_fn,method='max')
+    for src in sources:
+        src.close()
+    s2c_docker_srtm_folder = "/root/sen2cor/2.9/dem/srtm"
+    for tile in srtm_tiles:
+        os.symlink(output_fn,os.path.join(s2c_docker_srtm_folder,tile+'.tif'))
+
+
+

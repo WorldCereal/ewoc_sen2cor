@@ -21,12 +21,12 @@ Run
 
 *s2c_plan*: Process an entire plan
 ```bash
- docker run -ti --rm -v --env-file env.dev Data:/work ewoc_s2c run_s2c.py s2c_plan -p /work/SEN2TEST/arg_21HTC.json -o /work/SEN2TEST/OUT/ -cfg /work/SEN2TEST/eodag_config.yml
+ docker run -ti --rm -v Data:/work ewoc_s2c run_s2c.py s2c_plan -p /work/SEN2TEST/arg_21HTC.json -o /work/SEN2TEST/OUT/ -cfg /work/SEN2TEST/eodag_config.yml --env-file env.dev
 ```
 *s2c_id*: Process one S2 L1C product
 
 ```bash
- docker run -ti --rm -v --env-file env.dev Data:/work ewoc_s2c run_s2c.py s2c_id -p S2B_MSIL1C_20190822T105629_N0208_R094_T30SWF_20190822T131655 -o /work/SEN2TEST/OUT/ -cfg /work/SEN2TEST/eodag_config.yml
+ docker run -ti --rm -v Data:/work ewoc_s2c run_s2c.py s2c_id -p S2B_MSIL1C_20190822T105629_N0208_R094_T30SWF_20190822T131655 -o /work/SEN2TEST/OUT/ -cfg /work/SEN2TEST/eodag_config.yml --env-file env.dev
 ```
 This command will run sen2cor on input L1C S2 and convert the result into ewoc format. The level 1 data is **automatically downloaded** from the data provider using dataship
 
@@ -45,7 +45,7 @@ To use the ESA CCI package, you'll need to download it from [here](http://maps.e
 
 - [X] Use SRTM
 - [X] Convert output to EWoC ARD format
-- [ ] Adapt dataship `get_srtm` for sen2cor (use s3 bucket, creo or custom)
+- [X] Adapt dataship `get_srtm` for sen2cor (use s3 bucket, creo or custom)
 - [X] Update `run_s2c.py` or create a python package using [pyscaffold](https://github.com/pyscaffold/pyscaffold)
 
 - [X] Get S2 L1C from creodias using dataship with an S2 L1C id 
@@ -54,4 +54,4 @@ To use the ESA CCI package, you'll need to download it from [here](http://maps.e
 
 - [X] Upload S2 L2A ard directly to creodias bucket
 
-- [ ] Connect to the ewoc postgresql database
+- [X] Connect to the ewoc postgresql database
