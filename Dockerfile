@@ -10,8 +10,11 @@ RUN pip3 install -U pip
 ADD eotile-0.2rc3-py3-none-any.whl /opt
 RUN pip3 install /opt/eotile-0.2rc3-py3-none-any.whl
 
+
 COPY dataship-0.1.3.tar.gz /opt
 RUN pip3 install /opt/dataship-0.1.3.tar.gz
+COPY ewoc_db-0.0.0.tar.gz /opt
+RUN pip3 install /opt/ewoc_db-0.0.0.tar.gz
 
 ## Install sen2cor
 RUN wget -P /opt http://step.esa.int/thirdparties/sen2cor/2.9.0/Sen2Cor-02.09.00-Linux64.run
