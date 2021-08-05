@@ -38,8 +38,8 @@ def run_plan(plan, l2a_dir, provider, config):
             if not os.path.exists(out_dir_l2a):
                 os.makedirs(out_dir_l2a)
             try:
-                get_product_by_id(prod['id'], out_dir_l1c, provider, config_file=config)
-                print(f'Download done for {prod["id"]}\n')
+                get_product_by_id(prod, out_dir_l1c, provider, config_file=config)
+                print(f'Download done for {prod}\n')
                 l1c_safe_folder = [os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith('SAFE')][0]
                 l1c_safe_folder = last_safe(l1c_safe_folder)
                 l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a)
