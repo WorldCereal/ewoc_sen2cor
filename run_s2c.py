@@ -66,6 +66,11 @@ def run_id(pid, l2a_dir, provider, config):
     if l2a_dir is None:
         l2a_dir = "/work/SEN2TEST/OUT/"
     # Generate temporary folders
+    dem_tmp_dir = "/work/SEN2TEST/DEM/"
+    tile = pid.split('_')[5][1:]
+    if not os.path.exists(dem_tmp_dir):
+        os.makedirs(dem_tmp_dir)
+    custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
     out_dir_l1c,out_dir_l2a = make_tmp_dirs(l2a_dir)
     # Get Sat product by id using eodag
     get_product_by_id(pid, out_dir_l1c, provider, config_file=config)
@@ -90,11 +95,16 @@ def run_id(pid, l2a_dir, provider, config):
 def run_db(executor, status_filter):
     l2a_dir = "/work/SEN2TEST/OUT/"
     # Generate temporary folders
+    dem_tmp_dir = "/work/SEN2TEST/DEM/"
+    if not os.path.exists(dem_tmp_dir):
+        os.makedirs(dem_tmp_dir)
     out_dir_l1c,out_dir_l2a = make_tmp_dirs(l2a_dir)
     # Get Sat product by id using eodag
     db_type = "fsmac"
     tile, _ = get_next_tile(db_type, executor, status_filter)
     pid = tile.products
+    s2tile = pid.split('_')[5][1:]
+    custom_s2c_dem(s2tile, tmp_dir=dem_tmp_dir)
     get_product_by_id(pid, out_dir_l1c)
     print(f'Download done for {pid}\n')
     # Make sure to get the right path to the SAFE folder!
