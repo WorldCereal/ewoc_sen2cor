@@ -3,7 +3,9 @@ import shutil
 import zipfile
 
 from dataship.dag.s3man import *
+from dataship.dag.utils import get_dates_from_prod_id
 from eotile.eotile_module import main
+from eodag import EODataAccessGateway
 import rasterio
 from rasterio.merge import merge
 
@@ -94,6 +96,27 @@ def custom_s2c_dem(tile_id,tmp_dir):
     s2c_docker_srtm_folder = "/root/sen2cor/2.9/dem/srtm"
     for tile in srtm_tiles:
         os.symlink(output_fn,os.path.join(s2c_docker_srtm_folder,tile+'.tif'))
+
+
+def get_existing_l2a_id(pid,provider = 'creodias'):
+    sd,ed,sens = get_dates_from_prod_id(pid)
+    s2tile = pid.split('_')[5][1:]
+    df = main(s2tile,no_l8=True)[0]
+    poly = df.geometry[0].to_wkt()
+    dag = EODataAccessGateway()
+    dag.set_preferred_provider(provider)
+    max_items = 2000
+    product_type = "S2_MSI_L2A"
+    products, est = dag.search(productType=product_type, start=sd, end=ed, geom=poly,
+                               items_per_page=max_items, cloudCover=90)
+    l1c_date = pid.split('_')[2].split('T')[0]
+    l2a_id = None
+    for prod in products:
+        prod_date = prod.properties["startTimeFromAscendingNode"].split("T")[0].replace("-", "")
+        prod_s2tile = prod.properties['id'].split('_')[5][1:]
+        if l1c_date == prod_date and s2tile == prod_s2tile:
+            l2a_id = prod.properties['id']
+    return l2a_id
 
 
 

@@ -63,6 +63,7 @@ def run_plan(plan, l2a_dir, provider, config):
 @click.option('-cfg', '--config',default=None, help="EOdag config file")
 @click.option('-pv', '--provider', default="creodias", help="Data provider")
 def run_id(pid, l2a_dir, provider, config):
+    check_l2a = False
     if l2a_dir is None:
         l2a_dir = "/work/SEN2TEST/OUT/"
     # Generate temporary folders
@@ -73,14 +74,21 @@ def run_id(pid, l2a_dir, provider, config):
     custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
     out_dir_l1c,out_dir_l2a = make_tmp_dirs(l2a_dir)
     # Get Sat product by id using eodag
-    get_product_by_id(pid, out_dir_l1c, provider, config_file=config)
-    print(f'Download done for {pid}\n')
-    # Make sure to get the right path to the SAFE folder!
-    # TODO make this list comprehension more robust using regex
-    l1c_safe_folder = [os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith('SAFE')][0]
-    l1c_safe_folder = last_safe(l1c_safe_folder)
-    ## Processing time, here sen2cor, could be another processor
-    l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a)
+    l2a_id = get_existing_l2a_id(pid)
+    if l2a_id is None:
+        get_product_by_id(pid, out_dir_l1c, provider, config_file=config)
+        # Make sure to get the right path to the SAFE folder!
+        # TODO make this list comprehension more robust using regex
+        l1c_safe_folder = \
+        [os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith('SAFE')][0]
+        l1c_safe_folder = last_safe(l1c_safe_folder)
+        ## Processing time, here sen2cor, could be another processor
+        l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a)
+    else:
+        get_product_by_id(l2a_id, out_dir_l1c, provider, config_file=config,product_type="S2_MSI_L2A")
+        l1c_safe_folder = \
+        [os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith('SAFE')][0]
+        l2a_safe_folder = last_safe(l1c_safe_folder)
     # Convert the sen2cor output to ewoc ard format
     l2a_to_ard(l2a_safe_folder, l2a_dir)
     # Delete local folders
