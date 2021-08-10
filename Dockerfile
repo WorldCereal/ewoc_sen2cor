@@ -11,8 +11,8 @@ ADD eotile-0.2rc3-py3-none-any.whl /opt
 RUN pip3 install /opt/eotile-0.2rc3-py3-none-any.whl
 
 
-COPY dataship-0.1.3.tar.gz /opt
-RUN pip3 install /opt/dataship-0.1.3.tar.gz
+COPY dataship-0.1.6.tar.gz /opt
+RUN pip3 install /opt/dataship-0.1.6.tar.gz
 ADD ewoc_db-0.0.0-py2.py3-none-any.whl /opt
 RUN pip3 install /opt/ewoc_db-0.0.0-py2.py3-none-any.whl
 
