@@ -3,7 +3,9 @@ import shutil
 import zipfile
 
 from dataship.dag.s3man import *
+from dataship.dag.utils import get_dates_from_prod_id
 from eotile.eotile_module import main
+from eodag import EODataAccessGateway
 import rasterio
 from rasterio.merge import merge
 
@@ -97,6 +99,9 @@ def custom_s2c_dem(tile_id,tmp_dir):
             os.symlink(output_fn, os.path.join(s2c_docker_srtm_folder, tile + '.tif'))
         except OSError:
             print('Symlink error: probably already exists')
+
+
+
 
 
 
