@@ -74,7 +74,7 @@ def run_id(pid, l2a_dir, provider, config):
     custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
     out_dir_l1c,out_dir_l2a = make_tmp_dirs(l2a_dir)
     # Get Sat product by id using eodag
-    get_product_by_id(pid, out_dir_l1c, provider, config_file=config,product_type="S2_MSI_L2A")
+    get_product_by_id(pid, out_dir_l1c, provider, config_file=config)
     l1c_safe_folder = \
     [os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith('SAFE')][0]
     l2a_safe_folder = last_safe(l1c_safe_folder)
