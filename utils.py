@@ -95,7 +95,10 @@ def custom_s2c_dem(tile_id,tmp_dir):
         src.close()
     s2c_docker_srtm_folder = "/root/sen2cor/2.9/dem/srtm"
     for tile in srtm_tiles:
-        os.symlink(output_fn,os.path.join(s2c_docker_srtm_folder,tile+'.tif'))
+        try:
+            os.symlink(output_fn,os.path.join(s2c_docker_srtm_folder,tile+'.tif'))
+        except OSError:
+            print('Symlink error: probably already exists')
 
 
 def get_existing_l2a_id(pid,provider = 'creodias'):
