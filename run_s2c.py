@@ -46,7 +46,7 @@ def run_plan(plan, l2a_dir, provider, config):
                 l2a_to_ard(l2a_safe_folder, l2a_dir)
                 clean(out_dir_l2a)
                 clean(out_dir_l1c)
-                ewoc_s3_upload()
+                ewoc_s3_upload(l2a_dir)
                 count = +1
             except:
                 print(f'Something went wrong with {prod["id"]}')
@@ -119,7 +119,7 @@ def run_db(executor, status_filter):
     clean(out_dir_l2a)
     clean(out_dir_l1c)
     # Send to s3
-    ewoc_s3_upload()
+    ewoc_s3_upload(l2a_dir)
     ###### Update status of id on success
     tile.update_status(tile.id, db_type)
 
