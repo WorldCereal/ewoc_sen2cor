@@ -76,7 +76,7 @@ def run_id(pid, l2a_dir, provider, config):
     get_product_by_id(pid, out_dir_l1c, provider, config_file=config)
     l1c_safe_folder = \
     [os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith('SAFE')][0]
-    l2a_safe_folder = last_safe(l1c_safe_folder)
+    l1c_safe_folder = last_safe(l1c_safe_folder)
     # Run sen2cor in subprocess
     l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a)
     # Convert the sen2cor output to ewoc ard format
