@@ -5,7 +5,8 @@ ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
 ## Install dataship and eotile
-RUN apt-get update -y && apt-get install -y python3-pip && apt-get install -y wget
+RUN apt-get update -y && apt-get install -y python3-pip && apt-get install -y wget \
+    && rm -rf /var/lib/apt/lists/*
 RUN pip3 install -U pip
 ADD eotile-0.2rc3-py3-none-any.whl /opt
 RUN pip3 install /opt/eotile-0.2rc3-py3-none-any.whl
