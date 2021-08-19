@@ -50,6 +50,13 @@ jobs:
           tag: "0.1.6"
           fileName: "dataship-0.1.6.tar.gz"
           token: ${{ secrets.CS_ORG_TOKEN }}
+      - name: Download EWoC DB
+        uses: robinraju/release-downloader@v1.1
+        with:
+          repository: "WorldCereal/ewoc_db"
+          tag: "0.1"
+          fileName: "ewoc_db-0.0.0-py2.py3-none-any.whl"
+          token: ${{ secrets.CS_ORG_TOKEN }}
       - name: Build Docker images
         uses: docker/build-push-action@v2.5.0
         with:
