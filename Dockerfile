@@ -8,14 +8,23 @@ ENV LANG=C.UTF-8
 RUN apt-get update -y && apt-get install -y python3-pip && apt-get install -y wget \
     && rm -rf /var/lib/apt/lists/*
 RUN pip3 install -U pip
-ADD eotile-0.2rc3-py3-none-any.whl /opt
-RUN pip3 install /opt/eotile-0.2rc3-py3-none-any.whl
+
+ARG EOTILE_VERSION=0.2rc3
+LABEL EOTILE="${EOTILE_VERSION}"
+ADD eotile-${EOTILE_VERSION}-py3-none-any.whl /opt
+RUN pip3 install /opt/eotile-${EOTILE_VERSION}-py3-none-any.whl
 
 
-COPY dataship-0.1.6.tar.gz /opt
-RUN pip3 install /opt/dataship-0.1.6.tar.gz
-ADD ewoc_db-0.0.0-py2.py3-none-any.whl /opt
-RUN pip3 install /opt/ewoc_db-0.0.0-py2.py3-none-any.whl
+ARG EWOC_DATASHIP_VERSION=0.1.6
+LABEL EWOC_DATASHIP="${EWOC_DATASHIP_VERSION}"
+COPY dataship-${EWOC_DATASHIP_VERSION}.tar.gz /opt
+RUN pip3 install /opt/dataship-${EWOC_DATASHIP_VERSION}.tar.gz
+
+
+ARG EWOC_DB_VERSION=0.0.0
+LABEL EWOC_DB="${EWOC_DB_VERSION}"
+ADD ewoc_db-${EWOC_DB_VERSION}-py2.py3-none-any.whl /opt
+RUN pip3 install /opt/ewoc_db-${EWOC_DB_VERSION}-py2.py3-none-any.whl
 
 ## Install sen2cor
 RUN wget --quiet -P /opt http://step.esa.int/thirdparties/sen2cor/2.9.0/Sen2Cor-02.09.00-Linux64.run \
