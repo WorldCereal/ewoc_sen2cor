@@ -1,11 +1,11 @@
 import json
+import os
 
 import click
+from dataship.dag.utils import get_product_by_id, l2a_to_ard
 from ewoc_db.fill.update_status import get_next_tile
-import os
-from utils import *
-from dataship.dag.utils import l2a_to_ard, get_product_by_id
 
+from utils import *
 
 
 @click.group()
@@ -46,7 +46,7 @@ def run_plan(plan, l2a_dir, provider, config):
                 l2a_to_ard(l2a_safe_folder, l2a_dir)
                 clean(out_dir_l2a)
                 clean(out_dir_l1c)
-                ewoc_s3_upload()
+                ewoc_s3_upload(l2a_dir)
                 count = +1
             except:
                 print(f'Something went wrong with {prod["id"]}')
@@ -63,7 +63,6 @@ def run_plan(plan, l2a_dir, provider, config):
 @click.option('-cfg', '--config',default=None, help="EOdag config file")
 @click.option('-pv', '--provider', default="creodias", help="Data provider")
 def run_id(pid, l2a_dir, provider, config):
-    check_l2a = False
     if l2a_dir is None:
         l2a_dir = "/work/SEN2TEST/OUT/"
     # Generate temporary folders
@@ -71,31 +70,24 @@ def run_id(pid, l2a_dir, provider, config):
     tile = pid.split('_')[5][1:]
     if not os.path.exists(dem_tmp_dir):
         os.makedirs(dem_tmp_dir)
-    custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
+    dem_syms = custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
     out_dir_l1c,out_dir_l2a = make_tmp_dirs(l2a_dir)
     # Get Sat product by id using eodag
-    l2a_id = get_existing_l2a_id(pid)
-    if l2a_id is None:
-        get_product_by_id(pid, out_dir_l1c, provider, config_file=config)
-        # Make sure to get the right path to the SAFE folder!
-        # TODO make this list comprehension more robust using regex
-        l1c_safe_folder = \
-        [os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith('SAFE')][0]
-        l1c_safe_folder = last_safe(l1c_safe_folder)
-        ## Processing time, here sen2cor, could be another processor
-        l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a)
-    else:
-        get_product_by_id(l2a_id, out_dir_l1c, provider, config_file=config,product_type="S2_MSI_L2A")
-        l1c_safe_folder = \
-        [os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith('SAFE')][0]
-        l2a_safe_folder = last_safe(l1c_safe_folder)
+    get_product_by_id(pid, out_dir_l1c, provider, config_file=config)
+    l1c_safe_folder = \
+    [os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith('SAFE')][0]
+    l1c_safe_folder = last_safe(l1c_safe_folder)
+    # Run sen2cor in subprocess
+    l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a)
     # Convert the sen2cor output to ewoc ard format
     l2a_to_ard(l2a_safe_folder, l2a_dir)
     # Delete local folders
     clean(out_dir_l2a)
     clean(out_dir_l1c)
+    clean(dem_tmp_dir)
+    unlink(dem_syms)
     # Send to s3
-    ewoc_s3_upload()
+    ewoc_s3_upload(l2a_dir)
 
 @cli.command('s2c_db', help="Sen2cor Postgreqsl mode")
 @click.option('-e', '--executor', help="Name of the executor")
@@ -127,7 +119,7 @@ def run_db(executor, status_filter):
     clean(out_dir_l2a)
     clean(out_dir_l1c)
     # Send to s3
-    ewoc_s3_upload()
+    ewoc_s3_upload(l2a_dir)
     ###### Update status of id on success
     tile.update_status(tile.id, db_type)
 

@@ -1,12 +1,9 @@
-import os
 import shutil
 import zipfile
 
-from dataship.dag.s3man import *
-from dataship.dag.utils import get_dates_from_prod_id
-from eotile.eotile_module import main
-from eodag import EODataAccessGateway
 import rasterio
+from dataship.dag.s3man import *
+from eotile.eotile_module import main
 from rasterio.merge import merge
 
 
@@ -45,12 +42,11 @@ def last_safe(safe_folder):
 def get_var_env(var_name):
     return os.getenv(var_name)
 
-def ewoc_s3_upload():
+def ewoc_s3_upload(local_path):
     try:
         # Try to upload to s3 bucket, you'll need to define some env vars needed for the s3 client and destination path
         s3c = get_s3_client()
         bucket = get_var_env("BUCKET")
-        local_path = get_var_env("S2C_LP")
         s3_path = get_var_env("DEST_PREFIX")
         recursive_upload_dir_to_s3(s3_client=s3c,local_path=local_path,s3_path=s3_path,bucketname=bucket)
         # <!> Delete output folder after upload
@@ -86,7 +82,7 @@ def custom_s2c_dem(tile_id,tmp_dir):
         srtm_list.append(os.path.join(tmp_dir,srtm_id,srtm_id+'.tif'))
         srtm_tiles.append(srtm_id)
     sources = []
-    output_fn = os.path.join(tmp_dir,'mosaic.tif')
+    output_fn = os.path.join(tmp_dir,f'mosaic_{"_".join(srtm_ids)}.tif')
     for raster in srtm_list:
         src = rasterio.open(raster)
         sources.append(src)
@@ -94,32 +90,26 @@ def custom_s2c_dem(tile_id,tmp_dir):
     for src in sources:
         src.close()
     s2c_docker_srtm_folder = "/root/sen2cor/2.9/dem/srtm"
+    links = []
     for tile in srtm_tiles:
         try:
-            os.symlink(output_fn,os.path.join(s2c_docker_srtm_folder,tile+'.tif'))
+            os.symlink(output_fn, os.path.join(s2c_docker_srtm_folder, tile + '.tif'))
+            links.append(os.path.join(s2c_docker_srtm_folder, tile + '.tif'))
         except OSError:
             print('Symlink error: probably already exists')
+    return links
+
+def unlink(links):
+    for symlink in links:
+        try:
+            os.unlink(symlink)
+            print(f" -- [Ok] Unlinked {symlink}")
+        except:
+            print(f"Cannot unlink {symlink}")
 
 
-def get_existing_l2a_id(pid,provider = 'creodias'):
-    sd,ed,sens = get_dates_from_prod_id(pid)
-    s2tile = pid.split('_')[5][1:]
-    df = main(s2tile,no_l8=True)[0]
-    poly = df.geometry[0].to_wkt()
-    dag = EODataAccessGateway()
-    dag.set_preferred_provider(provider)
-    max_items = 2000
-    product_type = "S2_MSI_L2A"
-    products, est = dag.search(productType=product_type, start=sd, end=ed, geom=poly,
-                               items_per_page=max_items, cloudCover=90)
-    l1c_date = pid.split('_')[2].split('T')[0]
-    l2a_id = None
-    for prod in products:
-        prod_date = prod.properties["startTimeFromAscendingNode"].split("T")[0].replace("-", "")
-        prod_s2tile = prod.properties['id'].split('_')[5][1:]
-        if l1c_date == prod_date and s2tile == prod_s2tile:
-            l2a_id = prod.properties['id']
-    return l2a_id
+
+
 
 
 
