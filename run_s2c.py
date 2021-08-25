@@ -1,11 +1,11 @@
 import json
+import os
 
 import click
+from dataship.dag.utils import get_product_by_id, l2a_to_ard
 from ewoc_db.fill.update_status import get_next_tile
-import os
-from utils import *
-from dataship.dag.utils import l2a_to_ard, get_product_by_id
 
+from utils import *
 
 
 @click.group()
@@ -46,7 +46,7 @@ def run_plan(plan, l2a_dir, provider, config):
                 l2a_to_ard(l2a_safe_folder, l2a_dir)
                 clean(out_dir_l2a)
                 clean(out_dir_l1c)
-                ewoc_s3_upload()
+                ewoc_s3_upload(l2a_dir)
                 count = +1
             except:
                 print(f'Something went wrong with {prod["id"]}')
@@ -70,7 +70,7 @@ def run_id(pid, l2a_dir, provider, config):
     tile = pid.split('_')[5][1:]
     if not os.path.exists(dem_tmp_dir):
         os.makedirs(dem_tmp_dir)
-    custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
+    dem_syms = custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
     out_dir_l1c,out_dir_l2a = make_tmp_dirs(l2a_dir)
     # Get Sat product by id using eodag
     get_product_by_id(pid, out_dir_l1c, provider, config_file=config)
@@ -84,8 +84,10 @@ def run_id(pid, l2a_dir, provider, config):
     # Delete local folders
     clean(out_dir_l2a)
     clean(out_dir_l1c)
+    clean(dem_tmp_dir)
+    unlink(dem_syms)
     # Send to s3
-    ewoc_s3_upload()
+    ewoc_s3_upload(l2a_dir)
 
 @cli.command('s2c_db', help="Sen2cor Postgreqsl mode")
 @click.option('-e', '--executor', help="Name of the executor")
@@ -117,7 +119,7 @@ def run_db(executor, status_filter):
     clean(out_dir_l2a)
     clean(out_dir_l1c)
     # Send to s3
-    ewoc_s3_upload()
+    ewoc_s3_upload(l2a_dir)
     ###### Update status of id on success
     tile.update_status(tile.id, db_type)
 
