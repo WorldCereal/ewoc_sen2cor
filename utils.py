@@ -70,6 +70,11 @@ def custom_s2c_dem(tile_id,tmp_dir):
     bucket = "world-cereal"
     srtm_list=[]
     srtm_tiles=[]
+    # Clear the srtm folder from tiles remaining from previous runs
+    s2c_docker_srtm_folder = "/root/sen2cor/2.9/dem/srtm"
+    clean(s2c_docker_srtm_folder)
+    # Create (back) the srtm folder
+    os.makedirs(s2c_docker_srtm_folder)
     # download the zip files
     for srtm_id in srtm_ids:
         key = os.path.join("srtm90",srtm_id+".zip")
@@ -89,7 +94,6 @@ def custom_s2c_dem(tile_id,tmp_dir):
     merge(sources,dst_path=output_fn,method='max')
     for src in sources:
         src.close()
-    s2c_docker_srtm_folder = "/root/sen2cor/2.9/dem/srtm"
     links = []
     for tile in srtm_tiles:
         try:
