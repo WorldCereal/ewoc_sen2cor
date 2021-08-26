@@ -1,10 +1,9 @@
-import logging
 import shutil
 import sys
-import zipfile
 
 import rasterio
 from dataship.dag.s3man import *
+from dataship.dag.utils import get_product_by_id
 from eotile.eotile_module import main
 from rasterio.merge import merge
 
@@ -20,7 +19,9 @@ def set_logger(verbose_v):
     v_to_level = {"v": "INFO", "vv": "DEBUG"}
     loglevel = v_to_level[verbose_v]
     logformat = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
-    logging.basicConfig(level=loglevel, stream=sys.stdout, format=logformat, datefmt="%Y-%m-%d %H:%M:%S")
+    logging.basicConfig(
+        level=loglevel, stream=sys.stdout, format=logformat, datefmt="%Y-%m-%d %H:%M:%S"
+    )
 
 
 def run_s2c(l1c_safe, l2a_out):
@@ -36,7 +37,11 @@ def run_s2c(l1c_safe, l2a_out):
     s2c_cmd = f"./Sen2Cor-02.09.00-Linux64/bin/L2A_Process {l1c_safe} --output_dir {l2a_out} --resolution 10"
     os.system(s2c_cmd)
     # TODO instead of getting the first element of this list, select folder using date and tile id from l1 id
-    l2a_safe_folder = [os.path.join(l2a_out, fold) for fold in os.listdir(l2a_out) if fold.endswith("SAFE")][0]
+    l2a_safe_folder = [
+        os.path.join(l2a_out, fold)
+        for fold in os.listdir(l2a_out)
+        if fold.endswith("SAFE")
+    ][0]
     return l2a_safe_folder
 
 
@@ -68,7 +73,9 @@ def ewoc_s3_upload(local_path):
         s3c = get_s3_client()
         bucket = get_var_env("BUCKET")
         s3_path = get_var_env("DEST_PREFIX")
-        recursive_upload_dir_to_s3(s3_client=s3c, local_path=local_path, s3_path=s3_path, bucketname=bucket)
+        recursive_upload_dir_to_s3(
+            s3_client=s3c, local_path=local_path, s3_path=s3_path, bucketname=bucket
+        )
         # <!> Delete output folder after upload
         clean(local_path)
         logger.info(f"{local_path} cleared")
@@ -137,3 +144,19 @@ def unlink(links):
             logger.info(f" -- [Ok] Unlinked {symlink}")
         except:
             logger.info(f"Cannot unlink {symlink}")
+
+
+def robust_get_by_id(pid, out_dir):
+    """
+    Get product by id using multiple strategies
+    :param pid: Sentinel-2 product id
+    :param out_dir: Output directory where the SAFE folder will be downloaded
+    """
+    try:
+        out_dir = Path(out_dir)
+        pid = pid + ".SAFE"
+        download_s2_prd_from_creodias(pid, out_dir)
+    except:
+        logger.info("Failed to download product from eodata s3 bucket")
+        logger.info("Switching to API calls using eodag")
+        get_product_by_id(pid, out_dir)

@@ -47,7 +47,7 @@ def run_plan(plan, l2a_dir, provider, config):
             if not os.path.exists(out_dir_l2a):
                 os.makedirs(out_dir_l2a)
             try:
-                get_product_by_id(prod, out_dir_l1c, provider, config_file=config)
+                robust_get_by_id(prod, out_dir_l1c)
                 logger.info(f"Download done for {prod}\n")
                 l1c_safe_folder = [
                     os.path.join(out_dir_l1c, fold)
@@ -86,7 +86,7 @@ def run_id(pid, l2a_dir, provider, config):
     dem_syms = custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
     out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
     # Get Sat product by id using eodag
-    get_product_by_id(pid, out_dir_l1c, provider, config_file=config)
+    robust_get_by_id(pid, out_dir_l1c)
     l1c_safe_folder = [
         os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith("SAFE")
     ][0]
@@ -125,7 +125,7 @@ def run_db(executor, status_filter):
     pid = tile.products
     s2tile = pid.split("_")[5][1:]
     custom_s2c_dem(s2tile, tmp_dir=dem_tmp_dir)
-    get_product_by_id(pid, out_dir_l1c)
+    robust_get_by_id(pid, out_dir_l1c)
     logger.info(f"Download done for {pid}\n")
     # Make sure to get the right path to the SAFE folder!
     # TODO make this list comprehension more robust using regex
