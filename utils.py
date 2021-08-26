@@ -1,10 +1,9 @@
-import logging
 import shutil
 import sys
-import zipfile
 
 import rasterio
 from dataship.dag.s3man import *
+from dataship.dag.utils import get_product_by_id
 from eotile.eotile_module import main
 from rasterio.merge import merge
 
@@ -137,3 +136,17 @@ def unlink(links):
             logger.info(f" -- [Ok] Unlinked {symlink}")
         except:
             logger.info(f"Cannot unlink {symlink}")
+
+def robust_get_by_id(pid,out_dir):
+    """
+    Get product by id using multiple strategies
+    :param pid: Sentinel-2 product id
+    :param out_dir: Output directory where the SAFE folder will be downloaded
+    """
+    try:
+        out_dir = Path(out_dir)
+        download_s2_prd_from_creodias(pid, out_dir)
+    except:
+        logger.info("Failed to download product from eodata s3 bucket")
+        logger.info("Switching to API calls using eodag")
+        get_product_by_id(pid,out_dir)
