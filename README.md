@@ -21,12 +21,12 @@ Run
 
 *s2c_plan*: Process an entire plan
 ```bash
- docker run -ti --rm -v Data:/work ewoc_s2c run_s2c.py s2c_plan -p /work/SEN2TEST/arg_21HTC.json -o /work/SEN2TEST/OUT/ -cfg /work/SEN2TEST/eodag_config.yml --env-file env.dev
+ docker run -ti --rm --env-file env.dev ewoc_s2c:0.5 run_s2c.py  --verbose v s2c_plan -p /work/SEN2TEST/arg_21HTC.json
 ```
 *s2c_id*: Process one S2 L1C product
 
 ```bash
- docker run -ti --rm -v Data:/work ewoc_s2c run_s2c.py s2c_id -p S2B_MSIL1C_20190822T105629_N0208_R094_T30SWF_20190822T131655 -o /work/SEN2TEST/OUT/ -cfg /work/SEN2TEST/eodag_config.yml --env-file env.dev
+docker run -ti --rm --env-file env.dev ewoc_s2c:0.5 run_s2c.py --verbose v s2c_id -p S2B_MSIL1C_20190822T105629_N0208_R094_T30SWF_20190822T131655
 ```
 This command will run sen2cor on input L1C S2 and convert the result into ewoc format. The level 1 data is **automatically downloaded** from the data provider using dataship
 
