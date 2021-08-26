@@ -71,7 +71,7 @@ def ewoc_s3_upload(local_path):
         recursive_upload_dir_to_s3(s3_client=s3c, local_path=local_path, s3_path=s3_path, bucketname=bucket)
         # <!> Delete output folder after upload
         clean(local_path)
-        logger.debug(f"{local_path} cleared")
+        logger.info(f"{local_path} cleared")
     except:
         logger.info("Could not upload output folder to s3, results saved locally")
 
@@ -96,10 +96,10 @@ def custom_s2c_dem(tile_id, tmp_dir):
     # Clear the srtm folder from tiles remaining from previous runs
     s2c_docker_srtm_folder = "/root/sen2cor/2.9/dem/srtm"
     clean(s2c_docker_srtm_folder)
-    logger.debug("/root/sen2cor/2.9/dem/srtm --> clean (deleted)")
+    logger.info("/root/sen2cor/2.9/dem/srtm --> clean (deleted)")
     # Create (back) the srtm folder
     os.makedirs(s2c_docker_srtm_folder)
-    logger.debug("/root/sen2cor/2.9/dem/srtm --> created")
+    logger.info("/root/sen2cor/2.9/dem/srtm --> created")
     # download the zip files
     for srtm_id in srtm_ids:
         key = os.path.join("srtm90", srtm_id + ".zip")
@@ -117,7 +117,7 @@ def custom_s2c_dem(tile_id, tmp_dir):
         src = rasterio.open(raster)
         sources.append(src)
     merge(sources, dst_path=output_fn, method="max")
-    logger.debug(f"Created mosaic {output_fn}")
+    logger.info(f"Created mosaic {output_fn}")
     for src in sources:
         src.close()
     links = []
