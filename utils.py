@@ -36,9 +36,7 @@ def run_s2c(l1c_safe, l2a_out):
     s2c_cmd = f"./Sen2Cor-02.09.00-Linux64/bin/L2A_Process {l1c_safe} --output_dir {l2a_out} --resolution 10"
     os.system(s2c_cmd)
     # TODO instead of getting the first element of this list, select folder using date and tile id from l1 id
-    l2a_safe_folder = [os.path.join(l2a_out, fold) for fold in os.listdir(l2a_out) if fold.endswith("SAFE")][
-        0
-    ]
+    l2a_safe_folder = [os.path.join(l2a_out, fold) for fold in os.listdir(l2a_out) if fold.endswith("SAFE")][0]
     return l2a_safe_folder
 
 
