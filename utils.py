@@ -1,4 +1,5 @@
 import functools
+import os
 import shutil
 import signal
 import sys
@@ -193,5 +194,8 @@ def robust_get_by_id(pid, out_dir):
     except:
         logger.info("Failed to download product from eodata s3 bucket")
         logger.info("Switching to API calls using eodag")
+        # Clean input folder
+        if len(os.listdir(out_dir))!=0:
+            init_folder(out_dir)
         get_product_by_id(pid, out_dir)
 
