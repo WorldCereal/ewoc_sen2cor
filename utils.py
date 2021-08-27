@@ -1,4 +1,6 @@
+import functools
 import shutil
+import signal
 import sys
 
 import rasterio
@@ -19,9 +21,38 @@ def set_logger(verbose_v):
     v_to_level = {"v": "INFO", "vv": "DEBUG"}
     loglevel = v_to_level[verbose_v]
     logformat = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
-    logging.basicConfig(
-        level=loglevel, stream=sys.stdout, format=logformat, datefmt="%Y-%m-%d %H:%M:%S"
-    )
+    logging.basicConfig(level=loglevel, stream=sys.stdout, format=logformat, datefmt="%Y-%m-%d %H:%M:%S")
+
+
+class TimeoutError(Exception):
+    pass
+
+
+def timeout(seconds, error_message="Function call timed out"):
+    """
+    Decorate a function to stop it after n seconds
+    :param seconds: Delay in seconds to wait before timing out the function
+    :param error_message: Error message
+
+    Code from Python.org wiki: https://wiki.python.org/moin/PythonDecoratorLibrary#Function_Timeout
+    """
+
+    def decorated(func):
+        def _handle_timeout(signum, frame):
+            raise TimeoutError(error_message)
+
+        def wrapper(*args, **kwargs):
+            signal.signal(signal.SIGALRM, _handle_timeout)
+            signal.alarm(seconds)
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                signal.alarm(0)
+            return result
+
+        return functools.wraps(func)(wrapper)
+
+    return decorated
 
 
 def run_s2c(l1c_safe, l2a_out):
@@ -37,11 +68,7 @@ def run_s2c(l1c_safe, l2a_out):
     s2c_cmd = f"./Sen2Cor-02.09.00-Linux64/bin/L2A_Process {l1c_safe} --output_dir {l2a_out} --resolution 10"
     os.system(s2c_cmd)
     # TODO instead of getting the first element of this list, select folder using date and tile id from l1 id
-    l2a_safe_folder = [
-        os.path.join(l2a_out, fold)
-        for fold in os.listdir(l2a_out)
-        if fold.endswith("SAFE")
-    ][0]
+    l2a_safe_folder = [os.path.join(l2a_out, fold) for fold in os.listdir(l2a_out) if fold.endswith("SAFE")][0]
     return l2a_safe_folder
 
 
@@ -73,9 +100,7 @@ def ewoc_s3_upload(local_path):
         s3c = get_s3_client()
         bucket = get_var_env("BUCKET")
         s3_path = get_var_env("DEST_PREFIX")
-        recursive_upload_dir_to_s3(
-            s3_client=s3c, local_path=local_path, s3_path=s3_path, bucketname=bucket
-        )
+        recursive_upload_dir_to_s3(s3_client=s3c, local_path=local_path, s3_path=s3_path, bucketname=bucket)
         # <!> Delete output folder after upload
         clean(local_path)
         logger.info(f"{local_path} cleared")
@@ -94,7 +119,7 @@ def make_tmp_dirs(work_dir):
 
 
 def custom_s2c_dem(tile_id, tmp_dir):
-    srt_90 = main(tile_id, no_l8=True, no_s2=True, srtm5x5=True)
+    srt_90 = main(tile_id, no_l8=True, no_s2=True, srtm5x5=True, overlap=True)
     srt_90 = srt_90[-1]
     srtm_ids = list(srt_90["id"])
     bucket = "world-cereal"
@@ -146,6 +171,7 @@ def unlink(links):
             logger.info(f"Cannot unlink {symlink}")
 
 
+@timeout(1800)
 def robust_get_by_id(pid, out_dir):
     """
     Get product by id using multiple strategies
