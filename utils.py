@@ -107,14 +107,22 @@ def ewoc_s3_upload(local_path):
     except:
         logger.info("Could not upload output folder to s3, results saved locally")
 
+def init_folder(folder_path):
+    if os.path.exists(folder_path):
+        logger.info(f"Found {folder_path} -- start reset")
+        clean(folder_path)
+        logger.info(f"Cleared {folder_path}")
+        os.makedirs(folder_path)
+        logger.info(f"Created new folder {folder_path}")
+    else:
+        os.makedirs(folder_path)
+        logger.info(f"Created new folder {folder_path}")
 
 def make_tmp_dirs(work_dir):
     out_dir_in = os.path.join(work_dir, "tmp_in")
     out_dir_proc = os.path.join(work_dir, "tmp_proc")
-    if not os.path.exists(out_dir_in):
-        os.makedirs(out_dir_in)
-    if not os.path.exists(out_dir_proc):
-        os.makedirs(out_dir_proc)
+    init_folder(out_dir_in)
+    init_folder(out_dir_proc)
     return out_dir_in, out_dir_proc
 
 
@@ -186,3 +194,4 @@ def robust_get_by_id(pid, out_dir):
         logger.info("Failed to download product from eodata s3 bucket")
         logger.info("Switching to API calls using eodag")
         get_product_by_id(pid, out_dir)
+
