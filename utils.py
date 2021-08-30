@@ -27,11 +27,6 @@ def set_logger(verbose_v):
         level=loglevel, stream=sys.stdout, format=logformat, datefmt="%Y-%m-%d %H:%M:%S"
     )
 
-
-class TimeoutError(Exception):
-    pass
-
-
 class timeout(ContextDecorator):
     def __init__(self, secs):
         self.seconds = secs
@@ -45,6 +40,7 @@ class timeout(ContextDecorator):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         signal.alarm(0)
+        return exc_type is TimeoutError
 
 
 def run_s2c(l1c_safe, l2a_out):
