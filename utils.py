@@ -180,7 +180,7 @@ def unlink(links):
             logger.info(f"Cannot unlink {symlink}")
 
 
-@timeout(1800)
+@timeout(2)
 def robust_get_by_id(pid, out_dir):
     """
     Get product by id using multiple strategies
@@ -194,7 +194,7 @@ def robust_get_by_id(pid, out_dir):
     except:
         logger.info("Failed to download product from eodata s3 bucket")
         logger.info("Switching to API calls using eodag")
-        # Clean input folder
+        # Clean input folder from failed attempts
         if len(os.listdir(out_dir))!=0:
             init_folder(out_dir)
         get_product_by_id(pid, out_dir)
