@@ -1,5 +1,7 @@
 import shutil
+import signal
 import sys
+from contextlib import ContextDecorator
 
 import rasterio
 from dataship.dag.s3man import *
@@ -8,6 +10,8 @@ from eotile.eotile_module import main
 from rasterio.merge import merge
 
 logger = logging.getLogger(__name__)
+
+TIMEOUT_SECONDS = 900
 
 
 def set_logger(verbose_v):
@@ -22,6 +26,25 @@ def set_logger(verbose_v):
     logging.basicConfig(
         level=loglevel, stream=sys.stdout, format=logformat, datefmt="%Y-%m-%d %H:%M:%S"
     )
+
+
+class TimeoutError(Exception):
+    pass
+
+
+class timeout(ContextDecorator):
+    def __init__(self, secs):
+        self.seconds = secs
+
+    def _handle_timeout(self, signum, frame):
+        raise TimeoutError("Function call timed out")
+
+    def __enter__(self):
+        signal.signal(signal.SIGALRM, self._handle_timeout)
+        signal.alarm(self.seconds)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        signal.alarm(0)
 
 
 def run_s2c(l1c_safe, l2a_out):
@@ -83,18 +106,28 @@ def ewoc_s3_upload(local_path):
         logger.info("Could not upload output folder to s3, results saved locally")
 
 
+def init_folder(folder_path):
+    if os.path.exists(folder_path):
+        logger.info(f"Found {folder_path} -- start reset")
+        clean(folder_path)
+        logger.info(f"Cleared {folder_path}")
+        os.makedirs(folder_path)
+        logger.info(f"Created new folder {folder_path}")
+    else:
+        os.makedirs(folder_path)
+        logger.info(f"Created new folder {folder_path}")
+
+
 def make_tmp_dirs(work_dir):
     out_dir_in = os.path.join(work_dir, "tmp_in")
     out_dir_proc = os.path.join(work_dir, "tmp_proc")
-    if not os.path.exists(out_dir_in):
-        os.makedirs(out_dir_in)
-    if not os.path.exists(out_dir_proc):
-        os.makedirs(out_dir_proc)
+    init_folder(out_dir_in)
+    init_folder(out_dir_proc)
     return out_dir_in, out_dir_proc
 
 
 def custom_s2c_dem(tile_id, tmp_dir):
-    srt_90 = main(tile_id, no_l8=True, no_s2=True, srtm5x5=True)
+    srt_90 = main(tile_id, no_l8=True, no_s2=True, srtm5x5=True, overlap=True)
     srt_90 = srt_90[-1]
     srtm_ids = list(srt_90["id"])
     bucket = "world-cereal"
@@ -153,10 +186,14 @@ def robust_get_by_id(pid, out_dir):
     :param out_dir: Output directory where the SAFE folder will be downloaded
     """
     try:
-        out_dir = Path(out_dir)
-        pid = pid + ".SAFE"
-        download_s2_prd_from_creodias(pid, out_dir)
+        with timeout(TIMEOUT_SECONDS):
+            pid = pid + ".SAFE"
+            download_s2_prd_from_creodias(pid, Path(out_dir))
     except:
         logger.info("Failed to download product from eodata s3 bucket")
         logger.info("Switching to API calls using eodag")
-        get_product_by_id(pid, out_dir)
+        # Clean input folder from failed attempts
+        if len(os.listdir(out_dir)) != 0:
+            init_folder(out_dir)
+        with timeout(TIMEOUT_SECONDS):
+            get_product_by_id(pid, out_dir)
