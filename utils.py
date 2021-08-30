@@ -180,7 +180,7 @@ def unlink(links):
             logger.info(f"Cannot unlink {symlink}")
 
 
-@timeout(2)
+@timeout(1800)
 def robust_get_by_id(pid, out_dir):
     """
     Get product by id using multiple strategies
