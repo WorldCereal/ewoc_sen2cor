@@ -28,6 +28,10 @@ def set_logger(verbose_v):
     )
 
 class timeout(ContextDecorator):
+    """
+    Timeout context manager and decorator
+    inspired from python wiki: https://wiki.python.org/moin/PythonDecoratorLibrary#Function_Timeout
+    """
     def __init__(self, secs):
         self.seconds = secs
 
@@ -55,7 +59,6 @@ def run_s2c(l1c_safe, l2a_out):
     # This should work in container and local env
     s2c_cmd = f"./Sen2Cor-02.09.00-Linux64/bin/L2A_Process {l1c_safe} --output_dir {l2a_out} --resolution 10"
     os.system(s2c_cmd)
-    # TODO instead of getting the first element of this list, select folder using date and tile id from l1 id
     l2a_safe_folder = [
         os.path.join(l2a_out, fold)
         for fold in os.listdir(l2a_out)
@@ -65,6 +68,11 @@ def run_s2c(l1c_safe, l2a_out):
 
 
 def clean(folder):
+    """
+    Clean a folder using shutil
+    :param folder: Path to folder
+    :return:
+    """
     shutil.rmtree(folder)
 
 
@@ -83,6 +91,11 @@ def last_safe(safe_folder):
 
 
 def get_var_env(var_name):
+    """
+    Get environement variable by name
+    :param var_name: Variable name
+    :return: Value of the env var
+    """
     return os.getenv(var_name)
 
 
@@ -98,7 +111,7 @@ def ewoc_s3_upload(local_path):
         # <!> Delete output folder after upload
         clean(local_path)
         logger.info(f"{local_path} cleared")
-    except:
+    except :
         logger.info("Could not upload output folder to s3, results saved locally")
 
 
@@ -115,6 +128,11 @@ def init_folder(folder_path):
 
 
 def make_tmp_dirs(work_dir):
+    """
+    Create temporary directories for sen2cor
+    :param work_dir: The work directory
+    :return: Two paths to tmp_in and tmp_proc
+    """
     out_dir_in = os.path.join(work_dir, "tmp_in")
     out_dir_proc = os.path.join(work_dir, "tmp_proc")
     init_folder(out_dir_in)
@@ -123,6 +141,12 @@ def make_tmp_dirs(work_dir):
 
 
 def custom_s2c_dem(tile_id, tmp_dir):
+    """
+    Create srtm tiles mosaic for sen2cor
+    :param tile_id: Sentinel-2 tile id
+    :param tmp_dir: Temporary directory
+    :return: List of symlinks
+    """
     srt_90 = main(tile_id, no_l8=True, no_s2=True, srtm5x5=True, overlap=True)
     srt_90 = srt_90[-1]
     srtm_ids = list(srt_90["id"])
@@ -166,7 +190,11 @@ def custom_s2c_dem(tile_id, tmp_dir):
     return links
 
 
-def unlink(links):
+def rmlink(links):
+    """
+    Remove symbolic links
+    :param links: List of symlinks
+    """
     for symlink in links:
         try:
             os.unlink(symlink)

@@ -36,7 +36,7 @@ def run_plan(plan, l2a_dir, provider, config):
     for tile in plan:
         if not os.path.exists(dem_tmp_dir):
             os.makedirs(dem_tmp_dir)
-        custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
+        dem_syms = custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
         count = 0
         prods = plan[tile]["S2_PROC"]["INPUTS"]
         for prod in prods:
@@ -59,10 +59,12 @@ def run_plan(plan, l2a_dir, provider, config):
                 l2a_to_ard(l2a_safe_folder, l2a_dir)
                 clean(out_dir_l2a)
                 clean(out_dir_l1c)
+
                 ewoc_s3_upload(l2a_dir)
                 count = +1
             except:
                 logger.info(f'Something went wrong with {prod["id"]}')
+        rmlink(dem_syms)
         clean(dem_tmp_dir)
         number_of_products = len(prods)
         logger.info("\n\nEnd of processing ")
@@ -99,7 +101,7 @@ def run_id(pid, l2a_dir, provider, config):
     clean(out_dir_l2a)
     clean(out_dir_l1c)
     clean(dem_tmp_dir)
-    unlink(dem_syms)
+    rmlink(dem_syms)
     # Send to s3
     ewoc_s3_upload(l2a_dir)
 
@@ -124,7 +126,7 @@ def run_db(executor, status_filter):
     tile, _ = get_next_tile(db_type, executor, status_filter)
     pid = tile.products
     s2tile = pid.split("_")[5][1:]
-    custom_s2c_dem(s2tile, tmp_dir=dem_tmp_dir)
+    dem_links = custom_s2c_dem(s2tile, tmp_dir=dem_tmp_dir)
     robust_get_by_id(pid, out_dir_l1c)
     logger.info(f"Download done for {pid}\n")
     # Make sure to get the right path to the SAFE folder!
@@ -140,6 +142,8 @@ def run_db(executor, status_filter):
     # Delete local folders
     clean(out_dir_l2a)
     clean(out_dir_l1c)
+    clean(dem_tmp_dir)
+    rmlink(dem_links)
     # Send to s3
     ewoc_s3_upload(l2a_dir)
     ###### Update status of id on success
