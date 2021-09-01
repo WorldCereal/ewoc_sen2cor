@@ -190,8 +190,8 @@ def robust_get_by_id(pid, out_dir):
             pid = pid + ".SAFE"
             download_s2_prd_from_creodias(pid, Path(out_dir))
     except:
-        logger.info("Failed to download product from eodata s3 bucket")
-        logger.info("Switching to API calls using eodag")
+        logger.warning("Failed to download product from eodata s3 bucket")
+        logger.warning("Switching to API calls using eodag")
         # Clean input folder from failed attempts
         if len(os.listdir(out_dir)) != 0:
             init_folder(out_dir)
