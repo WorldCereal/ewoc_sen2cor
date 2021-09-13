@@ -186,3 +186,4 @@ def robust_get_by_id(pid, out_dir):
     :param out_dir: Output directory where the SAFE folder will be downloaded
     """
     download_s2_prd_from_creodias(pid, Path(out_dir))
+
