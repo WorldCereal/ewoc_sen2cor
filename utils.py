@@ -185,15 +185,5 @@ def robust_get_by_id(pid, out_dir):
     :param pid: Sentinel-2 product id
     :param out_dir: Output directory where the SAFE folder will be downloaded
     """
-    try:
-        with timeout(TIMEOUT_SECONDS):
-            pid = pid + ".SAFE"
-            download_s2_prd_from_creodias(pid, Path(out_dir))
-    except:
-        logger.warning("Failed to download product from eodata s3 bucket")
-        logger.warning("Switching to API calls using eodag")
-        # Clean input folder from failed attempts
-        if len(os.listdir(out_dir)) != 0:
-            init_folder(out_dir)
-        with timeout(TIMEOUT_SECONDS):
-            get_product_by_id(pid, out_dir)
+    download_s2_prd_from_creodias(pid, Path(out_dir))
+
