@@ -4,8 +4,8 @@ import sys
 from contextlib import ContextDecorator
 
 import rasterio
-from dataship.dag.s3man import *
-from dataship.dag.utils import get_product_by_id
+from ewoc_dag.dag.s3man import *
+from ewoc_dag.dag.utils import get_product_by_id
 from eotile.eotile_module import main
 from rasterio.merge import merge
 

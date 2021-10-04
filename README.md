@@ -28,7 +28,7 @@ Run
 ```bash
 docker run -ti --rm --env-file env.dev ewoc_s2c:0.5 run_s2c.py --verbose v s2c_id -p S2B_MSIL1C_20190822T105629_N0208_R094_T30SWF_20190822T131655
 ```
-This command will run sen2cor on input L1C S2 and convert the result into ewoc format. The level 1 data is **automatically downloaded** from the data provider using dataship
+This command will run sen2cor on input L1C S2 and convert the result into ewoc format. The level 1 data is **automatically downloaded** from the data provider using ewoc_dag
 
 The `--env-file` is used to environment variables to the `ewoc_s2c`container in order to upload the ARD result to s3 bucket.
 

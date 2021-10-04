@@ -1,7 +1,7 @@
 import json
 
 import click
-from dataship.dag.utils import l2a_to_ard
+from ewoc_dag.dag.utils import l2a_to_ard
 from ewoc_db.fill.update_status import get_next_tile
 
 from utils import *

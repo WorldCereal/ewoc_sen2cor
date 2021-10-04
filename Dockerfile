@@ -4,7 +4,7 @@ LABEL maintainer="Fahd Benatia <fahd.benatia@csgroup.eu>"
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
-## Install dataship and eotile
+## Install ewoc_dag and eotile
 RUN apt-get update -y && apt-get install -y python3-pip && apt-get install -y wget \
     && rm -rf /var/lib/apt/lists/*
 RUN pip3 install -U pip
@@ -15,10 +15,10 @@ ADD eotile-${EOTILE_VERSION}-py3-none-any.whl /opt
 RUN pip3 install /opt/eotile-${EOTILE_VERSION}-py3-none-any.whl
 
 
-ARG EWOC_DATASHIP_VERSION=0.1.10
-LABEL EWOC_DATASHIP="${EWOC_DATASHIP_VERSION}"
-COPY dataship-${EWOC_DATASHIP_VERSION}.tar.gz /opt
-RUN pip3 install /opt/dataship-${EWOC_DATASHIP_VERSION}.tar.gz
+ARG EWOC_DAG_VERSION=0.1.10
+LABEL ewoc_dag="${EWOC_DAG_VERSION}"
+COPY ewoc_dag-${EWOC_DAG_VERSION}.tar.gz /opt
+RUN pip3 install /opt/ewoc_dag-${EWOC_DAG_VERSION}.tar.gz
 
 
 ARG EWOC_DB_VERSION=0.0.0
