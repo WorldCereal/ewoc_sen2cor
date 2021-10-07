@@ -2,6 +2,7 @@ import json
 
 import click
 from dataship.dag.utils import l2a_to_ard
+from dataship.dag.s2_dag import get_s2_product
 from ewoc_db.fill.update_status import get_next_tile
 
 from utils import *
@@ -75,31 +76,37 @@ def run_plan(plan, l2a_dir, provider, config):
 @click.option("-o", "--l2a_dir", default=None, help="Output directory")
 @click.option("-cfg", "--config", default=None, help="EOdag config file")
 @click.option("-pv", "--provider", default="creodias", help="Data provider")
-def run_id(pid, l2a_dir, provider, config):
-    if l2a_dir is None:
-        l2a_dir = "/work/SEN2TEST/OUT/"
-    # Generate temporary folders
-    dem_tmp_dir = "/work/SEN2TEST/DEM/"
-    tile = pid.split("_")[5][1:]
-    if not os.path.exists(dem_tmp_dir):
-        os.makedirs(dem_tmp_dir)
-    dem_syms = custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
-    out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
-    # Get Sat product by id using eodag
-    robust_get_by_id(pid, out_dir_l1c)
-    l1c_safe_folder = [
-        os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith("SAFE")
-    ][0]
-    l1c_safe_folder = last_safe(l1c_safe_folder)
-    # Run sen2cor in subprocess
-    l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a)
-    # Convert the sen2cor output to ewoc ard format
-    l2a_to_ard(l2a_safe_folder, l2a_dir)
-    # Delete local folders
-    clean(out_dir_l2a)
-    clean(out_dir_l1c)
-    clean(dem_tmp_dir)
-    unlink(dem_syms)
+@click.option('--only_scl', is_flag=True)
+@click.option('--force_push', is_flag=True)
+def run_id(pid, l2a_dir, provider, config, only_scl=False, force_push=False):
+    if only_scl:
+        get_s2_product(pid, l2a_dir, source=provider)
+    else:
+        if l2a_dir is None:
+            l2a_dir = "/work/SEN2TEST/OUT/"
+        # Generate temporary folders
+        dem_tmp_dir = "/work/SEN2TEST/DEM/"
+        tile = pid.split("_")[5][1:]
+        if not os.path.exists(dem_tmp_dir):
+            os.makedirs(dem_tmp_dir)
+        dem_syms = custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
+
+        out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
+        # Get Sat product by id using eodag
+        robust_get_by_id(pid, out_dir_l1c)
+        l1c_safe_folder = [
+            os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith("SAFE")
+        ][0]
+        l1c_safe_folder = last_safe(l1c_safe_folder)
+        # Run sen2cor in subprocess
+        l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a)
+        # Convert the sen2cor output to ewoc ard format
+        l2a_to_ard(l2a_safe_folder, l2a_dir)
+        # Delete local folders
+        clean(out_dir_l2a)
+        clean(out_dir_l1c)
+        clean(dem_tmp_dir)
+        unlink(dem_syms)
     # Send to s3
     ewoc_s3_upload(l2a_dir)
 
