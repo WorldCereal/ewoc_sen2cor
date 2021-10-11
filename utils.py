@@ -179,12 +179,17 @@ def unlink(links):
             logger.info(f"Cannot unlink {symlink}")
 
 
-def robust_get_by_id(pid, out_dir):
+def robust_get_by_id(pid, out_dir, provider):
     """
     Get product by id using multiple strategies
     :param pid: Sentinel-2 product id
     :param out_dir: Output directory where the SAFE folder will be downloaded
     """
-    pid = pid + ".SAFE"
-    download_s2_prd_from_creodias(pid, Path(out_dir))
+    if provider.lower() == "creodias_eodata":
+        pid = pid + ".SAFE"
+        download_s2_prd_from_creodias(pid, Path(out_dir))
+    elif provider.lower() == "creodias_finder":
+        get_product_by_id(pid, out_dir)
+
+
 

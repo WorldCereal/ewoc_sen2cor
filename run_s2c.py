@@ -74,7 +74,7 @@ def run_plan(plan, l2a_dir, provider, config):
 @click.option("-p", "--pid", help="S2 L1C product ID")
 @click.option("-o", "--l2a_dir", default=None, help="Output directory")
 @click.option("-cfg", "--config", default=None, help="EOdag config file")
-@click.option("-pv", "--provider", default="creodias", help="Data provider")
+@click.option("-pv", "--provider", default="creodias_eodata", help="Data provider")
 def run_id(pid, l2a_dir, provider, config):
     if l2a_dir is None:
         l2a_dir = "/work/SEN2TEST/OUT/"
@@ -86,7 +86,7 @@ def run_id(pid, l2a_dir, provider, config):
     dem_syms = custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
     out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
     # Get Sat product by id using eodag
-    robust_get_by_id(pid, out_dir_l1c)
+    robust_get_by_id(pid, out_dir_l1c, provider)
     l1c_safe_folder = [
         os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith("SAFE")
     ][0]
