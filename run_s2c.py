@@ -81,8 +81,7 @@ def run_plan(plan, l2a_dir, provider, config):
 def run_id(pid, l2a_dir, provider, config, only_scl=False, force_push=False):
     if only_scl:
         get_s2_product(pid, l2a_dir, source=provider)
-        path = str(Path(l2a_dir)/(pid+".tif"))
-        binary_scl(path, path)
+        scl_to_ard(l2a_dir, pid)
     else:
         if l2a_dir is None:
             l2a_dir = "/work/SEN2TEST/OUT/"

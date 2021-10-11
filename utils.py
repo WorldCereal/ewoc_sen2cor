@@ -8,10 +8,52 @@ from dataship.dag.s3man import *
 from dataship.dag.utils import get_product_by_id
 from eotile.eotile_module import main
 from rasterio.merge import merge
-
+from dataship.dag.utils import binary_scl
+from pathlib import Path
 logger = logging.getLogger(__name__)
 
 TIMEOUT_SECONDS = 900
+
+
+def scl_to_ard(work_dir, prod_name):
+    """
+    Convert the SCL L2A product into EWoC ARD format
+    :param work_dir: Output directory
+    :param prod_name: The name of the tif product
+    """
+    # Prepare ewoc folder name
+    product_id = prod_name
+    platform = product_id.split("_")[0]
+    processing_level = product_id.split("_")[1]
+    date = product_id.split("_")[2]
+    year = date[:4]
+    # Get tile id , remove the T in the beginning
+    tile_id = product_id.split("_")[5][1:]
+    atcor_algo = "L2A"
+    unique_id = "".join(product_id.split("_")[3:6])
+    folder_st = os.path.join(
+        work_dir,
+        "OPTICAL",
+        tile_id[:2],
+        tile_id[2],
+        tile_id[3:],
+        year,
+        date.split("T")[0],
+    )
+    dir_name = f"{platform}_{processing_level}_{date}_{unique_id}_{tile_id}"
+    tmp_dir = os.path.join(folder_st, dir_name)
+    if not os.path.exists(tmp_dir):
+        os.makedirs(tmp_dir)
+
+    out_cld = f"{platform}_{atcor_algo}_{date}_{unique_id}_{tile_id}_MASK.tif"
+    raster_cld = os.path.join(folder_st, dir_name, out_cld)
+    input_file = str(Path(work_dir)/(prod_name+'.tif'))
+    binary_scl(input_file, raster_cld)
+    try:
+        os.remove(input_file)
+        os.remove(raster_cld + ".aux.xml")
+    except:
+        logger.info("Clean")
 
 
 def set_logger(verbose_v):
