@@ -47,7 +47,7 @@ class timeout(ContextDecorator):
         signal.alarm(0)
 
 
-def run_s2c(l1c_safe, l2a_out):
+def run_s2c(l1c_safe, l2a_out, only_scl):
     """
     Run sen2cor subprocess
     :param l1c_safe: Path to SAFE folder
@@ -57,7 +57,10 @@ def run_s2c(l1c_safe, l2a_out):
     # L2A_Process is expected to be added to /bin/
     # After installing sen2cor run source Sen2Cor-02.09.00-Linux64/L2A_Bashrc
     # This should work in container and local env
-    s2c_cmd = f"./Sen2Cor-02.09.00-Linux64/bin/L2A_Process {l1c_safe} --output_dir {l2a_out} --resolution 10"
+    if only_scl:
+        s2c_cmd = f"./Sen2Cor-02.09.00-Linux64/bin/L2A_Process {l1c_safe} --output_dir {l2a_out} --sc_only"
+    else:
+        s2c_cmd = f"./Sen2Cor-02.09.00-Linux64/bin/L2A_Process {l1c_safe} --output_dir {l2a_out} --resolution 10"
     os.system(s2c_cmd)
     # TODO instead of getting the first element of this list, select folder using date and tile id from l1 id
     l2a_safe_folder = [
@@ -185,6 +188,7 @@ def robust_get_by_id(pid, out_dir):
     :param pid: Sentinel-2 product id
     :param out_dir: Output directory where the SAFE folder will be downloaded
     """
-    pid = pid + ".SAFE"
-    download_s2_prd_from_creodias(pid, Path(out_dir))
-
+    #pid = pid + ".SAFE"
+    #download_s2_prd_from_creodias(pid, Path(out_dir))
+    # TODO replace with new mutli-source version
+    get_product_by_id(pid,out_dir)
