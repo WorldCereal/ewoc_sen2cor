@@ -75,13 +75,19 @@ def run_plan(plan, l2a_dir, provider, config):
 @click.option("-p", "--pid", help="S2 L1C product ID")
 @click.option("-o", "--l2a_dir", default=None, help="Output directory")
 @click.option("-cfg", "--config", default=None, help="EOdag config file")
-@click.option("-sc", "--only_scl", default=False, help="Data provider", is_flag=True)
+@click.option("-sc", "--only_scl", default=False, is_flag=True)
 @click.option("-pv", "--provider", default="creodias_eodata", help="Data provider")
 @click.option('--force_push', is_flag=True)
-def run_id(pid, l2a_dir, provider, config, only_scl=False, force_push=False):
-    if only_scl:
-        get_s2_product(pid, l2a_dir, source=provider)
-        scl_to_ard(l2a_dir, pid)
+@click.option('--no_sen2cor', help="Do not process with Sen2cor", is_flag=True)
+def run_id(pid, l2a_dir, provider, config, only_scl=False, force_push=False, no_sen2cor=False):
+    if "L2A" in pid and not no_sen2cor:
+        raise AttributeError("Using L2A product with Sen2cor is impossible")
+    if no_sen2cor:
+        if only_scl:
+            get_s2_product(pid, l2a_dir, source=provider)
+            scl_to_ard(l2a_dir, pid)
+        else:
+            raise NotImplementedError("Only the SCL MASK production is implemented")
     else:
         if l2a_dir is None:
             l2a_dir = "/work/SEN2TEST/OUT/"
