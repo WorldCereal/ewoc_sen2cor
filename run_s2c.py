@@ -75,8 +75,8 @@ def run_plan(plan, l2a_dir, provider, config):
 @click.option("-p", "--pid", help="S2 L1C product ID")
 @click.option("-o", "--l2a_dir", default=None, help="Output directory")
 @click.option("-cfg", "--config", default=None, help="EOdag config file")
+@click.option("-sc", "--only_scl", default=False, help="Data provider", is_flag=True)
 @click.option("-pv", "--provider", default="creodias_eodata", help="Data provider")
-@click.option('--only_scl', is_flag=True)
 @click.option('--force_push', is_flag=True)
 def run_id(pid, l2a_dir, provider, config, only_scl=False, force_push=False):
     if only_scl:
@@ -100,7 +100,7 @@ def run_id(pid, l2a_dir, provider, config, only_scl=False, force_push=False):
         ][0]
         l1c_safe_folder = last_safe(l1c_safe_folder)
         # Run sen2cor in subprocess
-        l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a)
+        l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a, only_scl)
         # Convert the sen2cor output to ewoc ard format
         l2a_to_ard(l2a_safe_folder, l2a_dir)
         # Delete local folders
