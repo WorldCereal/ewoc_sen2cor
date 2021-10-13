@@ -15,7 +15,7 @@ ADD eotile-${EOTILE_VERSION}-py3-none-any.whl /opt
 RUN pip3 install /opt/eotile-${EOTILE_VERSION}-py3-none-any.whl
 
 
-ARG EWOC_DATASHIP_VERSION=0.1.10
+ARG EWOC_DATASHIP_VERSION=0.2
 LABEL EWOC_DATASHIP="${EWOC_DATASHIP_VERSION}"
 COPY dataship-${EWOC_DATASHIP_VERSION}.tar.gz /opt
 RUN pip3 install /opt/dataship-${EWOC_DATASHIP_VERSION}.tar.gz
