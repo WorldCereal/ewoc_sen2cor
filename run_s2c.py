@@ -80,6 +80,10 @@ def run_plan(plan, l2a_dir, provider, config):
 @click.option('--force_push', is_flag=True)
 @click.option('--no_sen2cor', help="Do not process with Sen2cor", is_flag=True)
 def run_id(pid, l2a_dir, provider, config, only_scl=False, force_push=False, no_sen2cor=False):
+    if l2a_dir is None:
+        l2a_dir = "/work/SEN2TEST/OUT/"
+        if not os.path.exists(l2a_dir):
+            os.makedirs(l2a_dir)
     if "L2A" in pid and not no_sen2cor:
         raise AttributeError("Using L2A product with Sen2cor is impossible")
     if no_sen2cor:
@@ -89,8 +93,6 @@ def run_id(pid, l2a_dir, provider, config, only_scl=False, force_push=False, no_
         else:
             raise NotImplementedError("Only the SCL MASK production is implemented")
     else:
-        if l2a_dir is None:
-            l2a_dir = "/work/SEN2TEST/OUT/"
         # Generate temporary folders
         dem_tmp_dir = "/work/SEN2TEST/DEM/"
         tile = pid.split("_")[5][1:]
