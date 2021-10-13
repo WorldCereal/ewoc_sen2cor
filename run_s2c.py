@@ -108,7 +108,7 @@ def run_id(pid, l2a_dir, provider, config, only_scl=False, force_push=False, no_
         # Run sen2cor in subprocess
         l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a, only_scl)
         # Convert the sen2cor output to ewoc ard format
-        l2a_to_ard(l2a_safe_folder, l2a_dir)
+        l2a_to_ard(l2a_safe_folder, l2a_dir, only_scl)
         # Delete local folders
         clean(out_dir_l2a)
         clean(out_dir_l1c)
