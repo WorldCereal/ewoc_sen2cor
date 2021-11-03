@@ -9,10 +9,8 @@ RUN apt-get update -y && apt-get install -y python3-pip && apt-get install -y wg
     && rm -rf /var/lib/apt/lists/*
 RUN pip3 install -U pip
 
-ARG EOTILE_VERSION=0.2rc3
-LABEL EOTILE="${EOTILE_VERSION}"
-ADD eotile-${EOTILE_VERSION}-py3-none-any.whl /opt
-RUN pip3 install /opt/eotile-${EOTILE_VERSION}-py3-none-any.whl
+ARG EOTILE_VERSION=0.2.6
+RUN pip3 install eotile>=${EOTILE_VERSION}
 
 
 ARG EWOC_DATASHIP_VERSION=0.2.2
