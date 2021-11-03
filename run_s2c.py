@@ -14,13 +14,13 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--verbose",
     type=click.Choice(["v", "vv"]),
-    default="vv",
-    help="Set verbosity level: v for info, vv for debug",
-    required=True,
+    help="Set verbosity level: v for info, vv for debug, default is warning",
+    required=False,
 )
 def cli(verbose):
     click.secho("Run sen2cor", fg="green", bold=True)
-    set_logger(verbose)
+    if verbose is not None:
+        set_logger(verbose)
 
 
 @cli.command("s2c_plan", help="Sen2cor with a full plan as input")

@@ -59,8 +59,8 @@ def scl_to_ard(work_dir, prod_name):
 def set_logger(verbose_v):
     """
     Set the logger level
-    :param loglevel:
-    :return:
+    :param verbose_v: v for info, vv for debug (default to warning)
+    :type verbose_v: str
     """
     v_to_level = {"v": "INFO", "vv": "DEBUG"}
     loglevel = v_to_level[verbose_v]
