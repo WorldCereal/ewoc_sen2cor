@@ -4,13 +4,15 @@ import sys
 from contextlib import ContextDecorator
 
 import rasterio
-
+import zipfile
 from ewoc_dag.bucket.ewoc import EWOCAuxDataBucket, EWOCARDBucket
 from ewoc_dag.bucket.creodias import CreodiasBucket
 
 from eotile.eotile_module import main
 from rasterio.merge import merge
-from dataship.dag.utils import binary_scl
+
+from ewoc_dag.utils import binary_scl
+
 from pathlib import Path
 
 import logging
@@ -178,8 +180,6 @@ def custom_s2c_dem(tile_id, tmp_dir):
     srt_90 = main(tile_id, no_l8=True, no_s2=True, srtm5x5=True, overlap=True)
     srt_90 = srt_90[-1]
     srtm_ids = list(srt_90["id"])
-    srtm_list = []
-    srtm_tiles = []
     # Clear the srtm folder from tiles remaining from previous runs
     s2c_docker_srtm_folder = "/root/sen2cor/2.9/dem/srtm"
     clean(s2c_docker_srtm_folder)
@@ -189,19 +189,21 @@ def custom_s2c_dem(tile_id, tmp_dir):
     logger.info("/root/sen2cor/2.9/dem/srtm --> created")
     # download the zip files
     bucket = EWOCAuxDataBucket()
-    bucket.download_srtm3s_tiles(srtm_ids, tmp_dir)
+    bucket.download_srtm3s_tiles(srtm_ids, Path(tmp_dir))
 
     sources = []
     output_fn = os.path.join(tmp_dir, f'mosaic_{"_".join(srtm_ids)}.tif')
-    for raster in srtm_list:
-        src = rasterio.open(raster)
+
+    for srtm_id in srtm_ids:
+        raster_name = os.path.join(tmp_dir, "srtm3s", srtm_id + ".tif")
+        src = rasterio.open(raster_name)
         sources.append(src)
     merge(sources, dst_path=output_fn, method="max")
     logger.info(f"Created mosaic {output_fn}")
     for src in sources:
         src.close()
     links = []
-    for tile in srtm_tiles:
+    for tile in srtm_ids:
         try:
             os.symlink(output_fn, os.path.join(s2c_docker_srtm_folder, tile + ".tif"))
             links.append(os.path.join(s2c_docker_srtm_folder, tile + ".tif"))
