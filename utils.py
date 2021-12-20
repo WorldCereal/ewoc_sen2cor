@@ -4,14 +4,12 @@ import sys
 from contextlib import ContextDecorator
 
 import rasterio
-import zipfile
 from ewoc_dag.bucket.ewoc import EWOCAuxDataBucket, EWOCARDBucket
 from ewoc_dag.bucket.creodias import CreodiasBucket
 
 from eotile.eotile_module import main
 from rasterio.merge import merge
-
-from ewoc_dag.utils import binary_scl
+import numpy as np
 
 from pathlib import Path
 
@@ -21,6 +19,44 @@ import os
 logger = logging.getLogger(__name__)
 
 TIMEOUT_SECONDS = 900
+
+
+def binary_scl(scl_file, raster_fn):
+    """
+    Convert L2A SCL file to binary cloud mask
+    :param scl_file: Path to SCL file
+    :param raster_fn: Output binary mask path
+    """
+    with rasterio.open(scl_file, "r") as src:
+        scl = src.read(1)
+
+    # Set the to-be-masked SCL values
+    SCL_MASK_VALUES = [0, 1, 3, 8, 9, 10, 11]
+
+    # Set the nodata value in SCL
+    SCL_NODATA_VALUE = 0
+
+    # Contruct the final binary 0-1-255 mask
+    mask = np.zeros_like(scl)
+    mask[scl == SCL_NODATA_VALUE] = 255
+    mask[~np.isin(scl, SCL_MASK_VALUES)] = 1
+
+    meta = src.meta.copy()
+    meta["driver"] = "GTiff"
+    dtype = rasterio.uint8
+    meta["dtype"] = dtype
+    meta["nodata"] = 255
+
+    with rasterio.open(
+        raster_fn,
+        "w+",
+        **meta,
+        compress="deflate",
+        tiled=True,
+        blockxsize=512,
+        blockysize=512,
+    ) as out:
+        out.write(mask.astype(rasterio.uint8), 1)
 
 
 def scl_to_ard(work_dir, prod_name):
