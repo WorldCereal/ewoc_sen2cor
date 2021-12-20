@@ -4,12 +4,20 @@ import sys
 from contextlib import ContextDecorator
 
 import rasterio
-from dataship.dag.s3man import *
+from dataship.dag.s3man import (get_s3_client,
+                                recursive_upload_dir_to_s3,
+                                download_s3file,
+                                download_s2_prd_from_creodias)
 from dataship.dag.utils import get_product_by_id
 from eotile.eotile_module import main
 from rasterio.merge import merge
 from dataship.dag.utils import binary_scl
 from pathlib import Path
+
+import zipfile
+import logging
+import os
+
 logger = logging.getLogger(__name__)
 
 TIMEOUT_SECONDS = 900
