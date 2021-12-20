@@ -1,8 +1,8 @@
 import json
 
 import click
-from dataship.dag.utils import l2a_to_ard, binary_scl
-from dataship.dag.s2_dag import get_s2_product
+from ewoc_dag.utils import l2a_to_ard
+from ewoc_dag.bucket.ewoc import EWOCBucket
 from ewoc_db.fill.update_status import get_next_tile
 
 from utils import *
@@ -26,9 +26,9 @@ def cli(verbose):
 @cli.command("s2c_plan", help="Sen2cor with a full plan as input")
 @click.option("-p", "--plan", help="EWoC Plan in json format")
 @click.option("-o", "--l2a_dir", default=None, help="Output directory")
-@click.option("-cfg", "--config", default=None, help="EOdag config file")
-@click.option("-pv", "--provider", default=None, help="Data provider")
-def run_plan(plan, l2a_dir, provider, config):
+@click.option('--production_id', default="0000", help="Production ID that will be used to upload to s3 bucket. "
+                                                      "Default: 0000")
+def run_plan(plan, l2a_dir, production_id):
     if l2a_dir is None:
         l2a_dir = "/work/SEN2TEST/OUT/"
     dem_tmp_dir = "/work/SEN2TEST/DEM/"
@@ -60,7 +60,7 @@ def run_plan(plan, l2a_dir, provider, config):
                 l2a_to_ard(l2a_safe_folder, l2a_dir)
                 clean(out_dir_l2a)
                 clean(out_dir_l1c)
-                ewoc_s3_upload(l2a_dir)
+                ewoc_s3_upload(l2a_dir, production_id)
                 count = +1
             except:
                 logger.info(f'Something went wrong with {prod["id"]}')
@@ -74,12 +74,12 @@ def run_plan(plan, l2a_dir, provider, config):
 @cli.command("s2c_id", help="Sen2cor for on product using EOdag ID")
 @click.option("-p", "--pid", help="S2 L1C product ID")
 @click.option("-o", "--l2a_dir", default=None, help="Output directory")
-@click.option("-cfg", "--config", default=None, help="EOdag config file")
 @click.option("-sc", "--only_scl", default=False, is_flag=True)
-@click.option("-pv", "--provider", default="creodias_eodata", help="Data provider")
 @click.option('--force_push', is_flag=True)
 @click.option('--no_sen2cor', help="Do not process with Sen2cor", is_flag=True)
-def run_id(pid, l2a_dir, provider, config, only_scl=False, force_push=False, no_sen2cor=False):
+@click.option('--production_id', default="0000", help="Production ID that will be used to upload to s3 bucket. "
+                                                      "Default: 0000")
+def run_id(pid, l2a_dir, production_id, only_scl=False, force_push=False, no_sen2cor=False, ):
     if l2a_dir is None:
         l2a_dir = "/work/SEN2TEST/OUT/"
         if not os.path.exists(l2a_dir):
@@ -88,7 +88,9 @@ def run_id(pid, l2a_dir, provider, config, only_scl=False, force_push=False, no_
         raise AttributeError("Using L2A product with Sen2cor is impossible")
     if no_sen2cor:
         if only_scl:
-            get_s2_product(pid, l2a_dir, source=provider)
+            bucket = EWOCBucket()
+            bucket._download_prd(pid, l2a_dir)
+            # get_s2_product(pid, l2a_dir, source=provider)
             scl_to_ard(l2a_dir, pid)
         else:
             raise NotImplementedError("Only the SCL MASK production is implemented")
@@ -102,7 +104,7 @@ def run_id(pid, l2a_dir, provider, config, only_scl=False, force_push=False, no_
 
         out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
         # Get Sat product by id using eodag
-        robust_get_by_id(pid, out_dir_l1c, provider)
+        robust_get_by_id(pid, out_dir_l1c)
         l1c_safe_folder = [
             os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith("SAFE")
         ][0]
@@ -117,7 +119,7 @@ def run_id(pid, l2a_dir, provider, config, only_scl=False, force_push=False, no_
         clean(dem_tmp_dir)
         unlink(dem_syms)
     # Send to s3
-    ewoc_s3_upload(l2a_dir)
+    ewoc_s3_upload(l2a_dir, production_id)
 
 
 @cli.command("s2c_db", help="Sen2cor Postgreqsl mode")
@@ -128,7 +130,9 @@ def run_id(pid, l2a_dir, provider, config, only_scl=False, force_push=False, no_
     default="scheduled",
     help="Selects tiles that follow that condition",
 )
-def run_db(executor, status_filter):
+@click.option('--production_id', default="0000", help="Production ID that will be used to upload to s3 bucket. "
+                                                      "Default: 0000")
+def run_db(executor, status_filter, production_id):
     l2a_dir = "/work/SEN2TEST/OUT/"
     # Generate temporary folders
     dem_tmp_dir = "/work/SEN2TEST/DEM/"
@@ -157,7 +161,7 @@ def run_db(executor, status_filter):
     clean(out_dir_l2a)
     clean(out_dir_l1c)
     # Send to s3
-    ewoc_s3_upload(l2a_dir)
+    ewoc_s3_upload(l2a_dir, production_id)
     ###### Update status of id on success
     tile.update_status(tile.id, db_type)
 

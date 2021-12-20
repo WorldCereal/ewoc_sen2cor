@@ -4,17 +4,15 @@ import sys
 from contextlib import ContextDecorator
 
 import rasterio
-from dataship.dag.s3man import (get_s3_client,
-                                recursive_upload_dir_to_s3,
-                                download_s3file,
-                                download_s2_prd_from_creodias)
-from dataship.dag.utils import get_product_by_id
+
+from ewoc_dag.bucket.ewoc import EWOCAuxDataBucket, EWOCARDBucket
+from ewoc_dag.bucket.creodias import CreodiasBucket
+
 from eotile.eotile_module import main
 from rasterio.merge import merge
 from dataship.dag.utils import binary_scl
 from pathlib import Path
 
-import zipfile
 import logging
 import os
 
@@ -143,15 +141,12 @@ def get_var_env(var_name):
     return os.getenv(var_name)
 
 
-def ewoc_s3_upload(local_path):
+def ewoc_s3_upload(local_path, key="0000"):
     try:
         # Try to upload to s3 bucket, you'll need to define some env vars needed for the s3 client and destination path
-        s3c = get_s3_client()
-        bucket = get_var_env("BUCKET")
-        s3_path = get_var_env("DEST_PREFIX")
-        recursive_upload_dir_to_s3(
-            s3_client=s3c, local_path=local_path, s3_path=s3_path, bucketname=bucket
-        )
+        s3_bucket = EWOCARDBucket()
+
+        s3_bucket.upload_ard_prd(local_path, key)
         # <!> Delete output folder after upload
         clean(local_path)
         logger.info(f"{local_path} cleared")
@@ -183,7 +178,6 @@ def custom_s2c_dem(tile_id, tmp_dir):
     srt_90 = main(tile_id, no_l8=True, no_s2=True, srtm5x5=True, overlap=True)
     srt_90 = srt_90[-1]
     srtm_ids = list(srt_90["id"])
-    bucket = "world-cereal"
     srtm_list = []
     srtm_tiles = []
     # Clear the srtm folder from tiles remaining from previous runs
@@ -194,16 +188,9 @@ def custom_s2c_dem(tile_id, tmp_dir):
     os.makedirs(s2c_docker_srtm_folder)
     logger.info("/root/sen2cor/2.9/dem/srtm --> created")
     # download the zip files
-    for srtm_id in srtm_ids:
-        key = os.path.join("srtm90", srtm_id + ".zip")
-        outzip = os.path.join(tmp_dir, srtm_id + ".zip")
-        download_s3file(key, outzip, bucket)
-        outfold = outzip.replace(".zip", "")
-        with zipfile.ZipFile(outzip, "r") as zip_ref:
-            zip_ref.extractall(outfold)
-        os.remove(outzip)
-        srtm_list.append(os.path.join(tmp_dir, srtm_id, srtm_id + ".tif"))
-        srtm_tiles.append(srtm_id)
+    bucket = EWOCAuxDataBucket()
+    bucket.download_srtm3s_tiles(srtm_ids, tmp_dir)
+
     sources = []
     output_fn = os.path.join(tmp_dir, f'mosaic_{"_".join(srtm_ids)}.tif')
     for raster in srtm_list:
@@ -232,17 +219,14 @@ def unlink(links):
             logger.info(f"Cannot unlink {symlink}")
 
 
-def robust_get_by_id(pid, out_dir, provider):
+def robust_get_by_id(pid, out_dir):
     """
     Get product by id using multiple strategies
     :param pid: Sentinel-2 product id
     :param out_dir: Output directory where the SAFE folder will be downloaded
     """
-    if provider.lower() == "creodias_eodata":
-        pid = pid + ".SAFE"
-        download_s2_prd_from_creodias(pid, Path(out_dir))
-    elif provider.lower() == "creodias_finder":
-        get_product_by_id(pid, out_dir)
+    bucket = CreodiasBucket()
+    bucket.download_s2_prd(pid, Path(out_dir))
 
 
 
