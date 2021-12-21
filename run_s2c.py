@@ -2,7 +2,6 @@ import json
 
 import click
 from ewoc_dag.utils import l2a_to_ard
-from ewoc_dag.bucket.ewoc import EWOCBucket
 from ewoc_db.fill.update_status import get_next_tile
 
 from utils import *
@@ -48,7 +47,8 @@ def run_plan(plan, l2a_dir, production_id):
             if not os.path.exists(out_dir_l2a):
                 os.makedirs(out_dir_l2a)
             try:
-                robust_get_by_id(prod, out_dir_l1c)
+                bucket = CreodiasBucket()
+                bucket.download_s2_prd(prod, Path(out_dir_l1c))
                 logger.info(f"Download done for {prod}\n")
                 l1c_safe_folder = [
                     os.path.join(out_dir_l1c, fold)
@@ -75,22 +75,20 @@ def run_plan(plan, l2a_dir, production_id):
 @click.option("-p", "--pid", help="S2 L1C product ID")
 @click.option("-o", "--l2a_dir", default=None, help="Output directory")
 @click.option("-sc", "--only_scl", default=False, is_flag=True)
-@click.option('--force_push', is_flag=True)
 @click.option('--no_sen2cor', help="Do not process with Sen2cor", is_flag=True)
 @click.option('--production_id', default="0000", help="Production ID that will be used to upload to s3 bucket. "
                                                       "Default: 0000")
-def run_id(pid, l2a_dir, production_id, only_scl=False, force_push=False, no_sen2cor=False, ):
+def run_id(pid, l2a_dir, production_id, only_scl=False, no_sen2cor=False, ):
     if l2a_dir is None:
         l2a_dir = "/work/SEN2TEST/OUT/"
         if not os.path.exists(l2a_dir):
             os.makedirs(l2a_dir)
     if "L2A" in pid and not no_sen2cor:
         raise AttributeError("Using L2A product with Sen2cor is impossible")
+    bucket = CreodiasBucket()
     if no_sen2cor:
         if only_scl:
-            bucket = EWOCBucket()
-            bucket._download_prd(pid, l2a_dir)
-            # get_s2_product(pid, l2a_dir, source=provider)
+            bucket.download_s2_prd(pid, Path(l2a_dir), l2_mask_only= True)
             scl_to_ard(l2a_dir, pid)
         else:
             raise NotImplementedError("Only the SCL MASK production is implemented")
@@ -103,8 +101,8 @@ def run_id(pid, l2a_dir, production_id, only_scl=False, force_push=False, no_sen
         dem_syms = custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
 
         out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
-        # Get Sat product by id using eodag
-        robust_get_by_id(pid, out_dir_l1c)
+        # Get Sat product by id using ewoc_dag
+        bucket.download_s2_prd(pid, Path(out_dir_l1c))
         l1c_safe_folder = [
             os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith("SAFE")
         ][0]
@@ -145,7 +143,8 @@ def run_db(executor, status_filter, production_id):
     pid = tile.products
     s2tile = pid.split("_")[5][1:]
     custom_s2c_dem(s2tile, tmp_dir=dem_tmp_dir)
-    robust_get_by_id(pid, out_dir_l1c)
+    bucket = CreodiasBucket()
+    bucket.download_s2_prd(pid, Path(out_dir_l1c))
     logger.info(f"Download done for {pid}\n")
     # Make sure to get the right path to the SAFE folder!
     # TODO make this list comprehension more robust using regex

@@ -257,14 +257,4 @@ def unlink(links):
             logger.info(f"Cannot unlink {symlink}")
 
 
-def robust_get_by_id(pid, out_dir):
-    """
-    Get product by id using multiple strategies
-    :param pid: Sentinel-2 product id
-    :param out_dir: Output directory where the SAFE folder will be downloaded
-    """
-    bucket = CreodiasBucket()
-    bucket.download_s2_prd(pid, Path(out_dir))
-
-
 
