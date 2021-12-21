@@ -1,20 +1,16 @@
+import logging
+import os
 import shutil
 import signal
 import sys
 from contextlib import ContextDecorator
-
-import rasterio
-from ewoc_dag.bucket.ewoc import EWOCAuxDataBucket, EWOCARDBucket
-from ewoc_dag.bucket.creodias import CreodiasBucket
-
-from eotile.eotile_module import main
-from rasterio.merge import merge
-import numpy as np
-
 from pathlib import Path
 
-import logging
-import os
+import numpy as np
+import rasterio
+from eotile.eotile_module import main
+from ewoc_dag.bucket.ewoc import EWOCARDBucket, EWOCAuxDataBucket
+from rasterio.merge import merge
 
 logger = logging.getLogger(__name__)
 
