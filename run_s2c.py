@@ -2,6 +2,7 @@ import json
 
 import click
 from ewoc_dag.utils import l2a_to_ard
+from ewoc_dag.bucket.creodias import CreodiasBucket
 from ewoc_db.fill.update_status import get_next_tile
 
 from utils import *
