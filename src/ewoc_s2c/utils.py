@@ -158,7 +158,9 @@ def run_s2c(
     if only_scl:
         s2c_cmd = f"{bin_path} {l1c_safe} --output_dir {l2a_out} --sc_only"
     else:
-        s2c_cmd = f"{bin_path} {l1c_safe} --output_dir {l2a_out} --resolution 10"
+        s2c_cmd = (
+            f"{bin_path} {l1c_safe} --output_dir {l2a_out} --resolution 10 --debug"
+        )
     os.system(s2c_cmd)
     # TODO: select folder using date and tile id from l1 id
     l2a_safe_folder = [
@@ -308,6 +310,8 @@ def build_safe_level1(pid, product_folder, safe_dest_folder):
     :return: SAFE folder path
     """
     # Create root folder
+    if not pid.endswith(".SAFE"):
+        pid += ".SAFE"
     root_safe_folder = PurePath.joinpath(Path(safe_dest_folder), Path(pid))
     root_safe_folder.mkdir(parents=True, exist_ok=True)
     # Find the manifest.safe file in the product folder
@@ -362,11 +366,12 @@ def build_safe_level1(pid, product_folder, safe_dest_folder):
         shutil.copy(
             gr_gml, PurePath.joinpath(root_safe_folder, qi_data_gr_folder / gr_gml.name)
         )
-    # Copy the SENSOR_QUALITY.xml file
-    sens_qa = list(product_folder.glob("*/SENSOR_QUALITY.xml"))[0]
-    shutil.copy(
-        sens_qa, PurePath.joinpath(root_safe_folder, qi_data_gr_folder / sens_qa.name)
-    )
+    # Copy xml QA files
+    qi_xml_qa = list(product_folder.glob("qi/*.xml"))
+    for qi_xml in qi_xml_qa:
+        shutil.copy(
+            qi_xml, PurePath.joinpath(root_safe_folder, qi_data_gr_folder / qi_xml.name)
+        )
     # GRANULE/AUX_DATA
     ecmwft = list(product_folder.glob("*/ECMWFT"))[0]
     aux_folder = [
@@ -386,10 +391,20 @@ def build_safe_level1(pid, product_folder, safe_dest_folder):
         )
     # Copy manifest.safe
     shutil.copy(manifest_safe, PurePath.joinpath(root_safe_folder, manifest_safe.name))
-    # Copy metadata.xml to MTD_MSIL1C.xml
+    # Copy metadata.xml to MTD_MSIL1C.xml and MTD_TL.xml
     mtd_msi = list(product_folder.glob("metadata.xml"))[0]
     shutil.copy(mtd_msi, PurePath.joinpath(root_safe_folder, Path("MTD_MSIL1C.xml")))
+    shutil.copy(
+        mtd_msi,
+        PurePath.joinpath(root_safe_folder, aux_folder.parent, Path("MTD_TL.xml")),
+    )
     # Copy inspire xml
     insp_xml = list(product_folder.glob("inspire.xml"))[0]
     shutil.copy(insp_xml, PurePath.joinpath(root_safe_folder, Path("INSPIRE.xml")))
-    return safe_dest_folder
+    # Create rep_info folder (Empty folder missing info on aws)
+    rep_info = root_safe_folder / "rep_info"
+    rep_info.mkdir(parents=True, exist_ok=True)
+    # Create HTML folder
+    html = root_safe_folder / "HTML"
+    html.mkdir(parents=True, exist_ok=True)
+    return root_safe_folder

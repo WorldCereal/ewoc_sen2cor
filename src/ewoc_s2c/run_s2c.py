@@ -5,11 +5,13 @@ import os
 from pathlib import Path
 
 import click
+from ewoc_dag.bucket.aws import AWSS2L1CBucket
 from ewoc_dag.bucket.creodias import CreodiasBucket
 from ewoc_dag.utils import l2a_to_ard
 from ewoc_db.fill.update_status import get_next_tile
 
 from ewoc_s2c.utils import (
+    build_safe_level1,
     clean,
     custom_s2c_dem,
     ewoc_s3_upload,
@@ -120,10 +122,11 @@ def run_id(pid, l2a_dir, production_id, only_scl=False, no_sen2cor=False):
             os.makedirs(l2a_dir)
     if "L2A" in pid and not no_sen2cor:
         raise AttributeError("Using L2A product with Sen2cor is impossible")
-    bucket = CreodiasBucket()
+    # bucket = CreodiasBucket()
+    bucket = AWSS2L1CBucket()
     if no_sen2cor:
         if only_scl:
-            bucket.download_s2_prd(pid, Path(l2a_dir), l2_mask_only=True)
+            bucket.download_prd(pid, Path(l2a_dir), l2_mask_only=True)
             scl_to_ard(l2a_dir, pid)
         else:
             raise NotImplementedError("Only the SCL MASK production is implemented")
@@ -134,16 +137,12 @@ def run_id(pid, l2a_dir, production_id, only_scl=False, no_sen2cor=False):
         if not os.path.exists(dem_tmp_dir):
             os.makedirs(dem_tmp_dir)
         dem_syms = custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
-
         out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
         # Get Sat product by id using ewoc_dag
-        bucket.download_s2_prd(pid, Path(out_dir_l1c))
-        l1c_safe_folder = [
-            os.path.join(out_dir_l1c, fold)
-            for fold in os.listdir(out_dir_l1c)
-            if fold.endswith("SAFE")
-        ][0]
-        l1c_safe_folder = last_safe(l1c_safe_folder)
+        bucket.download_prd(pid, Path(l2a_dir))
+        l1c_safe_folder = os.path.join(l2a_dir, pid)
+        l1c_safe_folder = build_safe_level1(pid, l1c_safe_folder, out_dir_l1c)
+        print(l1c_safe_folder)
         # Run sen2cor in subprocess
         l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a, only_scl)
         # Convert the sen2cor output to ewoc ard format
