@@ -40,6 +40,5 @@ RUN mkdir -p /root/sen2cor/2.9/dem/srtm
 #RUN tar -xvf /tmp/ESACCI-LC-L4-ALL-FOR-SEN2COR.tar -C /tmp/Sen2Cor-02.09.00-Linux64/lib/python2.7/site-packages/sen2cor/aux_data/
 
 ## Copy scripts
-COPY run_s2c.py /.
-COPY utils.py /.
-ENTRYPOINT ["python3"]
+COPY . /
+ENTRYPOINT ["s2c"]
