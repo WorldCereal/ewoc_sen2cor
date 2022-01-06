@@ -392,3 +392,4 @@ def build_safe_level1(pid, product_folder, safe_dest_folder):
     # Copy inspire xml
     insp_xml = list(product_folder.glob("inspire.xml"))[0]
     shutil.copy(insp_xml, PurePath.joinpath(root_safe_folder, Path("INSPIRE.xml")))
+    return safe_dest_folder
