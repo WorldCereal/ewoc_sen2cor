@@ -1,11 +1,25 @@
+""" EWoC Sen2Cor processor CLI"""
 import json
+import logging
+import os
+from pathlib import Path
 
 import click
-from ewoc_dag.utils import l2a_to_ard
 from ewoc_dag.bucket.creodias import CreodiasBucket
+from ewoc_dag.utils import l2a_to_ard
 from ewoc_db.fill.update_status import get_next_tile
 
-from utils import *
+from ewoc_s2c.utils import (
+    clean,
+    custom_s2c_dem,
+    ewoc_s3_upload,
+    last_safe,
+    make_tmp_dirs,
+    run_s2c,
+    scl_to_ard,
+    set_logger,
+    unlink,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +33,11 @@ logger = logging.getLogger(__name__)
     required=True,
 )
 def cli(verbose):
+    """
+    CLI
+    :param verbose: verbose level
+    :return: None
+    """
     click.secho("Run sen2cor", fg="green", bold=True)
     set_logger(verbose)
 
@@ -26,14 +45,17 @@ def cli(verbose):
 @cli.command("s2c_plan", help="Sen2cor with a full plan as input")
 @click.option("-p", "--plan", help="EWoC Plan in json format")
 @click.option("-o", "--l2a_dir", default=None, help="Output directory")
-@click.option('--production_id', default="0000", help="Production ID that will be used to upload to s3 bucket. "
-                                                      "Default: 0000")
+@click.option(
+    "--production_id",
+    default="0000",
+    help="Production ID that will be used to upload to s3 bucket. " "Default: 0000",
+)
 def run_plan(plan, l2a_dir, production_id):
     if l2a_dir is None:
         l2a_dir = "/work/SEN2TEST/OUT/"
     dem_tmp_dir = "/work/SEN2TEST/DEM/"
-    with open(plan) as f:
-        plan = json.load(f)
+    with open(plan) as file_plan:
+        plan = json.load(file_plan)
     for tile in plan:
         if not os.path.exists(dem_tmp_dir):
             os.makedirs(dem_tmp_dir)
@@ -63,7 +85,7 @@ def run_plan(plan, l2a_dir, production_id):
                 clean(out_dir_l1c)
                 ewoc_s3_upload(l2a_dir, production_id)
                 count = +1
-            except:
+            except RuntimeError:
                 logger.info(f'Something went wrong with {prod["id"]}')
         clean(dem_tmp_dir)
         number_of_products = len(prods)
@@ -76,10 +98,22 @@ def run_plan(plan, l2a_dir, production_id):
 @click.option("-p", "--pid", help="S2 L1C product ID")
 @click.option("-o", "--l2a_dir", default=None, help="Output directory")
 @click.option("-sc", "--only_scl", default=False, is_flag=True)
-@click.option('--no_sen2cor', help="Do not process with Sen2cor", is_flag=True)
-@click.option('--production_id', default="0000", help="Production ID that will be used to upload to s3 bucket. "
-                                                      "Default: 0000")
-def run_id(pid, l2a_dir, production_id, only_scl=False, no_sen2cor=False, ):
+@click.option("--no_sen2cor", help="Do not process with Sen2cor", is_flag=True)
+@click.option(
+    "--production_id",
+    default="0000",
+    help="Production ID that will be used to upload to s3 bucket. " "Default: 0000",
+)
+def run_id(pid, l2a_dir, production_id, only_scl=False, no_sen2cor=False):
+    """
+    Run Sen2Cor with a product ID
+    :param pid: Sentinel-2 product identifier
+    :param l2a_dir: Output folder
+    :param production_id: Special identifier
+    :param only_scl: True to process scl only
+    :param no_sen2cor: Download directly, no local atmospheric correction
+    :return: None
+    """
     if l2a_dir is None:
         l2a_dir = "/work/SEN2TEST/OUT/"
         if not os.path.exists(l2a_dir):
@@ -89,7 +123,7 @@ def run_id(pid, l2a_dir, production_id, only_scl=False, no_sen2cor=False, ):
     bucket = CreodiasBucket()
     if no_sen2cor:
         if only_scl:
-            bucket.download_s2_prd(pid, Path(l2a_dir), l2_mask_only= True)
+            bucket.download_s2_prd(pid, Path(l2a_dir), l2_mask_only=True)
             scl_to_ard(l2a_dir, pid)
         else:
             raise NotImplementedError("Only the SCL MASK production is implemented")
@@ -105,7 +139,9 @@ def run_id(pid, l2a_dir, production_id, only_scl=False, no_sen2cor=False, ):
         # Get Sat product by id using ewoc_dag
         bucket.download_s2_prd(pid, Path(out_dir_l1c))
         l1c_safe_folder = [
-            os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith("SAFE")
+            os.path.join(out_dir_l1c, fold)
+            for fold in os.listdir(out_dir_l1c)
+            if fold.endswith("SAFE")
         ][0]
         l1c_safe_folder = last_safe(l1c_safe_folder)
         # Run sen2cor in subprocess
@@ -129,8 +165,11 @@ def run_id(pid, l2a_dir, production_id, only_scl=False, no_sen2cor=False, ):
     default="scheduled",
     help="Selects tiles that follow that condition",
 )
-@click.option('--production_id', default="0000", help="Production ID that will be used to upload to s3 bucket. "
-                                                      "Default: 0000")
+@click.option(
+    "--production_id",
+    default="0000",
+    help="Production ID that will be used to upload to s3 bucket. " "Default: 0000",
+)
 def run_db(executor, status_filter, production_id):
     l2a_dir = "/work/SEN2TEST/OUT/"
     # Generate temporary folders
@@ -150,10 +189,12 @@ def run_db(executor, status_filter, production_id):
     # Make sure to get the right path to the SAFE folder!
     # TODO make this list comprehension more robust using regex
     l1c_safe_folder = [
-        os.path.join(out_dir_l1c, fold) for fold in os.listdir(out_dir_l1c) if fold.endswith("SAFE")
+        os.path.join(out_dir_l1c, fold)
+        for fold in os.listdir(out_dir_l1c)
+        if fold.endswith("SAFE")
     ][0]
     l1c_safe_folder = last_safe(l1c_safe_folder)
-    ## Processing time, here sen2cor, could be another processor
+    # Processing time, here sen2cor, could be another processor
     l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a)
     # Convert the sen2cor output to ewoc ard format
     l2a_to_ard(l2a_safe_folder, l2a_dir)
@@ -162,7 +203,7 @@ def run_db(executor, status_filter, production_id):
     clean(out_dir_l1c)
     # Send to s3
     ewoc_s3_upload(l2a_dir, production_id)
-    ###### Update status of id on success
+    # Update status of id on success
     tile.update_status(tile.id, db_type)
 
 

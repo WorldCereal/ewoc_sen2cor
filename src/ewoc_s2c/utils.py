@@ -1,3 +1,4 @@
+""" EWoC Sen2Cor utils module"""
 import logging
 import os
 import shutil
@@ -6,6 +7,7 @@ import sys
 from contextlib import ContextDecorator
 from pathlib import Path
 
+import boto3.exceptions
 import numpy as np
 import rasterio
 from eotile.eotile_module import main
@@ -27,15 +29,15 @@ def binary_scl(scl_file, raster_fn):
         scl = src.read(1)
 
     # Set the to-be-masked SCL values
-    SCL_MASK_VALUES = [0, 1, 3, 8, 9, 10, 11]
+    scl_mask_values = [0, 1, 3, 8, 9, 10, 11]
 
     # Set the nodata value in SCL
-    SCL_NODATA_VALUE = 0
+    scl_nodata_value = 0
 
     # Contruct the final binary 0-1-255 mask
     mask = np.zeros_like(scl)
-    mask[scl == SCL_NODATA_VALUE] = 255
-    mask[~np.isin(scl, SCL_MASK_VALUES)] = 1
+    mask[scl == scl_nodata_value] = 255
+    mask[~np.isin(scl, scl_mask_values)] = 1
 
     meta = src.meta.copy()
     meta["driver"] = "GTiff"
@@ -87,12 +89,12 @@ def scl_to_ard(work_dir, prod_name):
 
     out_cld = f"{platform}_{atcor_algo}_{date}_{unique_id}_{tile_id}_MASK.tif"
     raster_cld = os.path.join(folder_st, dir_name, out_cld)
-    input_file = str(Path(work_dir)/(prod_name+'.tif'))
+    input_file = str(Path(work_dir) / (prod_name + ".tif"))
     binary_scl(input_file, raster_cld)
     try:
         os.remove(input_file)
         os.remove(raster_cld + ".aux.xml")
-    except:
+    except FileNotFoundError:
         logger.info("Clean")
 
 
@@ -110,16 +112,24 @@ def set_logger(verbose_v):
     )
 
 
-class TimeoutError(Exception):
+class TimeoutErrorSg(Exception):
+    """
+    Timeout Exception
+    """
+
     pass
 
 
-class timeout(ContextDecorator):
+class TimeOut(ContextDecorator):
+    """
+    Time out decorator
+    """
+
     def __init__(self, secs):
         self.seconds = secs
 
     def _handle_timeout(self, signum, frame):
-        raise TimeoutError("Function call timed out")
+        raise TimeoutErrorSg("Function call timed out")
 
     def __enter__(self):
         signal.signal(signal.SIGALRM, self._handle_timeout)
@@ -129,7 +139,12 @@ class timeout(ContextDecorator):
         signal.alarm(0)
 
 
-def run_s2c(l1c_safe, l2a_out, only_scl):
+def run_s2c(
+    l1c_safe,
+    l2a_out,
+    only_scl=False,
+    bin_path="./Sen2Cor-02.09.00-Linux64/bin/L2A_Process",
+):
     """
     Run sen2cor subprocess
     :param l1c_safe: Path to SAFE folder
@@ -140,11 +155,11 @@ def run_s2c(l1c_safe, l2a_out, only_scl):
     # After installing sen2cor run source Sen2Cor-02.09.00-Linux64/L2A_Bashrc
     # This should work in container and local env
     if only_scl:
-        s2c_cmd = f"./Sen2Cor-02.09.00-Linux64/bin/L2A_Process {l1c_safe} --output_dir {l2a_out} --sc_only"
+        s2c_cmd = f"{bin_path} {l1c_safe} --output_dir {l2a_out} --sc_only"
     else:
-        s2c_cmd = f"./Sen2Cor-02.09.00-Linux64/bin/L2A_Process {l1c_safe} --output_dir {l2a_out} --resolution 10"
+        s2c_cmd = f"{bin_path} {l1c_safe} --output_dir {l2a_out} --resolution 10"
     os.system(s2c_cmd)
-    # TODO instead of getting the first element of this list, select folder using date and tile id from l1 id
+    # TODO: select folder using date and tile id from l1 id
     l2a_safe_folder = [
         os.path.join(l2a_out, fold)
         for fold in os.listdir(l2a_out)
@@ -154,6 +169,11 @@ def run_s2c(l1c_safe, l2a_out, only_scl):
 
 
 def clean(folder):
+    """
+    Delete folder recursively
+    :param folder: Path to folder to be deleted
+    :return: None
+    """
     shutil.rmtree(folder)
 
 
@@ -164,31 +184,40 @@ def last_safe(safe_folder):
     :return: last path
     """
     tmp = safe_folder
-    for root, dirs, files in os.walk(safe_folder):
-        for dir in dirs:
-            if dir.endswith("SAFE"):
-                tmp = os.path.join(root, dir)
+    for root, dirs, _ in os.walk(safe_folder):
+        for dir_ in dirs:
+            if dir_.endswith("SAFE"):
+                tmp = os.path.join(root, dir_)
     return tmp
 
 
-def get_var_env(var_name):
-    return os.getenv(var_name)
-
-
 def ewoc_s3_upload(local_path, key="0000"):
+    """
+    Upload file to the Cloud (S3 bucket)
+    :param local_path: Path to the file to be uploaded
+    :param key: Special user identifier (can be any string though)
+    :return: None
+    """
     try:
-        # Try to upload to s3 bucket, you'll need to define some env vars needed for the s3 client and destination path
+        # Try to upload to s3 bucket,
+        # you'll need to define some env vars needed for the s3 client
+        # and destination path
         s3_bucket = EWOCARDBucket()
 
         s3_bucket.upload_ard_prd(local_path, key)
         # <!> Delete output folder after upload
         clean(local_path)
         logger.info(f"{local_path} cleared")
-    except:
+    except boto3.exceptions.S3UploadFailedError:
         logger.info("Could not upload output folder to s3, results saved locally")
 
 
 def init_folder(folder_path):
+    """
+    Create some work folders, delete if existing
+    :param folder_path: Path to folders location
+    :return: None
+    """
     if os.path.exists(folder_path):
         logger.info(f"Found {folder_path} -- start reset")
         clean(folder_path)
@@ -201,6 +230,11 @@ def init_folder(folder_path):
 
 
 def make_tmp_dirs(work_dir):
+    """
+    Crearte folders
+    :param work_dir: folders location
+    :return: None
+    """
     out_dir_in = os.path.join(work_dir, "tmp_in")
     out_dir_proc = os.path.join(work_dir, "tmp_proc")
     init_folder(out_dir_in)
@@ -209,6 +243,12 @@ def make_tmp_dirs(work_dir):
 
 
 def custom_s2c_dem(tile_id, tmp_dir):
+    """
+    Download and create an srtm mosaïc
+    :param tile_id: MGRS tile id (ex 31TCJ Toulouse)
+    :param tmp_dir: Output directory
+    :return: list of links to the downloaded DEM files
+    """
     srt_90 = main(tile_id, no_l8=True, no_s2=True, srtm5x5=True, overlap=True)
     srt_90 = srt_90[-1]
     srtm_ids = list(srt_90["id"])
@@ -245,12 +285,14 @@ def custom_s2c_dem(tile_id, tmp_dir):
 
 
 def unlink(links):
+    """
+    Remove symlinks created
+    :param links: List of links
+    :return: None
+    """
     for symlink in links:
         try:
             os.unlink(symlink)
             logger.info(f" -- [Ok] Unlinked {symlink}")
-        except:
+        except FileNotFoundError:
             logger.info(f"Cannot unlink {symlink}")
-
-
-
