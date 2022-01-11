@@ -7,7 +7,6 @@ from pathlib import Path
 import click
 from ewoc_dag.bucket.aws import AWSS2L1CBucket
 from ewoc_dag.bucket.creodias import CreodiasBucket
-from ewoc_dag.utils import l2a_to_ard
 from ewoc_db.fill.update_status import get_next_tile
 
 from ewoc_s2c.utils import (
@@ -15,6 +14,7 @@ from ewoc_s2c.utils import (
     clean,
     custom_s2c_dem,
     ewoc_s3_upload,
+    l2a_to_ard,
     last_safe,
     make_tmp_dirs,
     run_s2c,
@@ -142,7 +142,6 @@ def run_id(pid, l2a_dir, production_id, only_scl=False, no_sen2cor=False):
         bucket.download_prd(pid, Path(l2a_dir))
         l1c_safe_folder = os.path.join(l2a_dir, pid)
         l1c_safe_folder = build_safe_level1(pid, l1c_safe_folder, out_dir_l1c)
-        print(l1c_safe_folder)
         # Run sen2cor in subprocess
         l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a, only_scl)
         # Convert the sen2cor output to ewoc ard format
