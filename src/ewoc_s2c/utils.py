@@ -269,11 +269,11 @@ def last_safe(safe_folder):
     return tmp
 
 
-def ewoc_s3_upload(local_path, key="0000"):
+def ewoc_s3_upload(local_path, ard_prd_prefix):
     """
     Upload file to the Cloud (S3 bucket)
     :param local_path: Path to the file to be uploaded
-    :param key: Special user identifier (can be any string though)
+    :param ard_prd_prefix: Bucket prefix where store data
     :return: None
     """
     try:
@@ -282,7 +282,7 @@ def ewoc_s3_upload(local_path, key="0000"):
         # and destination path
         s3_bucket = EWOCARDBucket()
 
-        s3_bucket.upload_ard_prd(local_path, key)
+        s3_bucket.upload_ard_prd(local_path, ard_prd_prefix)
         # <!> Delete output folder after upload
         clean(local_path)
         logger.info(f"{local_path} cleared")

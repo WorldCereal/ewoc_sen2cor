@@ -152,7 +152,7 @@ def run_id(pid, l2a_dir, production_id, only_scl=False, no_sen2cor=False):
         clean(dem_tmp_dir)
         unlink(dem_syms)
     # Send to s3
-    ewoc_s3_upload(l2a_dir, production_id)
+    ewoc_s3_upload(Path(l2a_dir), production_id)
 
 
 @cli.command("s2c_db", help="Sen2cor Postgreqsl mode")
