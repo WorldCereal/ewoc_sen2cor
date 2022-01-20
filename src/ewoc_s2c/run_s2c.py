@@ -10,7 +10,6 @@ from ewoc_dag.s2_dag import get_s2_product
 from ewoc_db.fill.update_status import get_next_tile
 
 from ewoc_s2c.utils import (
-    build_safe_level1,
     clean,
     custom_s2c_dem,
     ewoc_s3_upload,
@@ -18,7 +17,6 @@ from ewoc_s2c.utils import (
     last_safe,
     make_tmp_dirs,
     run_s2c,
-    scl_to_ard,
     set_logger,
     unlink,
 )
@@ -124,9 +122,11 @@ def run_id(pid, production_id, data_source, only_scl=False, no_sen2cor=False):
 
     if no_sen2cor:
         if only_scl:
-            get_s2_product(pid, l2a_dir, source=data_source, l2_mask_only=True)
-            # TODO fix only_scl
-            scl_to_ard(l2a_dir, pid)
+            scl_folder = get_s2_product(
+                pid, l2a_dir, source=data_source, l2_mask_only=True
+            )
+            upload_folder = l2a_to_ard(scl_folder, l2a_dir, only_scl)
+            ewoc_s3_upload(Path(upload_folder), production_id)
         else:
             raise NotImplementedError("Only the SCL MASK production is implemented")
     else:
@@ -138,20 +138,23 @@ def run_id(pid, production_id, data_source, only_scl=False, no_sen2cor=False):
         dem_syms = custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
         out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
         # Get Sat product by id using ewoc_dag
-        get_s2_product(pid, l2a_dir, source=data_source)
-        l1c_safe_folder = os.path.join(l2a_dir, pid)
-        l1c_safe_folder = build_safe_level1(pid, l1c_safe_folder, out_dir_l1c)
+        if data_source == "aws":
+            l1c_safe_folder = get_s2_product(
+                pid, l2a_dir, source=data_source, aws_l1c_safe=True
+            )
+        else:
+            l1c_safe_folder = get_s2_product(pid, l2a_dir, source=data_source)
         # Run sen2cor in subprocess
         l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a, only_scl)
         # Convert the sen2cor output to ewoc ard format
-        l2a_to_ard(l2a_safe_folder, l2a_dir, only_scl)
+        upload_folder = l2a_to_ard(l2a_safe_folder, l2a_dir, only_scl)
         # Delete local folders
         clean(out_dir_l2a)
         clean(out_dir_l1c)
         clean(dem_tmp_dir)
         unlink(dem_syms)
-    # Send to s3
-    ewoc_s3_upload(Path(l2a_dir), production_id)
+        # Send to s3
+        ewoc_s3_upload(Path(upload_folder), production_id)
 
 
 @cli.command("s2c_db", help="Sen2cor Postgreqsl mode")
