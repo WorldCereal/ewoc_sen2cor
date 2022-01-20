@@ -5,8 +5,8 @@ import os
 from pathlib import Path
 
 import click
-from ewoc_dag.bucket.aws import AWSS2L1CBucket
 from ewoc_dag.bucket.creodias import CreodiasBucket
+from ewoc_dag.s2_dag import get_s2_product
 from ewoc_db.fill.update_status import get_next_tile
 
 from ewoc_s2c.utils import (
@@ -98,15 +98,15 @@ def run_plan(plan, l2a_dir, production_id):
 
 @cli.command("s2c_id", help="Sen2cor for on product using EOdag ID")
 @click.option("-p", "--pid", help="S2 L1C product ID")
-@click.option("-o", "--l2a_dir", default=None, help="Output directory")
-@click.option("-sc", "--only_scl", default=False, is_flag=True)
-@click.option("--no_sen2cor", help="Do not process with Sen2cor", is_flag=True)
 @click.option(
     "--production_id",
     default="0000",
     help="Production ID that will be used to upload to s3 bucket. " "Default: 0000",
 )
-def run_id(pid, l2a_dir, production_id, only_scl=False, no_sen2cor=False):
+@click.option("-ds", "--data_source", default="creodias")
+@click.option("-sc", "--only_scl", default=False, is_flag=True)
+@click.option("--no_sen2cor", help="Do not process with Sen2cor", is_flag=True)
+def run_id(pid, production_id, data_source, only_scl=False, no_sen2cor=False):
     """
     Run Sen2Cor with a product ID
     :param pid: Sentinel-2 product identifier
@@ -116,17 +116,16 @@ def run_id(pid, l2a_dir, production_id, only_scl=False, no_sen2cor=False):
     :param no_sen2cor: Download directly, no local atmospheric correction
     :return: None
     """
-    if l2a_dir is None:
-        l2a_dir = "/work/SEN2TEST/OUT/"
-        if not os.path.exists(l2a_dir):
-            os.makedirs(l2a_dir)
+
+    l2a_dir = Path("/work/SEN2TEST/OUT/")
+    l2a_dir.mkdir(exist_ok=True, parents=True)
     if "L2A" in pid and not no_sen2cor:
         raise AttributeError("Using L2A product with Sen2cor is impossible")
-    # bucket = CreodiasBucket()
-    bucket = AWSS2L1CBucket()
+
     if no_sen2cor:
         if only_scl:
-            bucket.download_prd(pid, Path(l2a_dir), l2_mask_only=True)
+            get_s2_product(pid, l2a_dir, source=data_source, l2_mask_only=True)
+            # TODO fix only_scl
             scl_to_ard(l2a_dir, pid)
         else:
             raise NotImplementedError("Only the SCL MASK production is implemented")
@@ -139,7 +138,7 @@ def run_id(pid, l2a_dir, production_id, only_scl=False, no_sen2cor=False):
         dem_syms = custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
         out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
         # Get Sat product by id using ewoc_dag
-        bucket.download_prd(pid, Path(l2a_dir))
+        get_s2_product(pid, l2a_dir, source=data_source)
         l1c_safe_folder = os.path.join(l2a_dir, pid)
         l1c_safe_folder = build_safe_level1(pid, l1c_safe_folder, out_dir_l1c)
         # Run sen2cor in subprocess
