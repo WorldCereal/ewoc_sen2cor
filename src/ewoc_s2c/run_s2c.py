@@ -117,6 +117,8 @@ def run_id(pid, production_id, data_source, only_scl=False, no_sen2cor=False):
 
     l2a_dir = Path("/work/SEN2TEST/OUT/")
     l2a_dir.mkdir(exist_ok=True, parents=True)
+    upload_dir = l2a_dir / "upload"
+    upload_dir.mkdir(exist_ok=True, parents=True)
     if "L2A" in pid and not no_sen2cor:
         raise AttributeError("Using L2A product with Sen2cor is impossible")
 
@@ -125,8 +127,8 @@ def run_id(pid, production_id, data_source, only_scl=False, no_sen2cor=False):
             scl_folder = get_s2_product(
                 pid, l2a_dir, source=data_source, l2_mask_only=True
             )
-            upload_folder = l2a_to_ard(scl_folder, l2a_dir, only_scl)
-            ewoc_s3_upload(Path(upload_folder), production_id)
+            l2a_to_ard(scl_folder, l2a_dir, only_scl)
+            ewoc_s3_upload(Path(upload_dir), production_id)
         else:
             raise NotImplementedError("Only the SCL MASK production is implemented")
     else:
@@ -147,17 +149,14 @@ def run_id(pid, production_id, data_source, only_scl=False, no_sen2cor=False):
         # Run sen2cor in subprocess
         l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a, only_scl)
         # Convert the sen2cor output to ewoc ard format
-        work_dir = l2a_dir / "work"
-        work_dir.mkdir(exist_ok=True, parents=True)
-        print("\n".join(os.listdir(l2a_dir)))
-        l2a_to_ard(l2a_safe_folder, work_dir, only_scl)
+        l2a_to_ard(l2a_safe_folder, upload_dir, only_scl)
         # Delete local folders
         clean(out_dir_l2a)
         clean(out_dir_l1c)
         clean(dem_tmp_dir)
         unlink(dem_syms)
         # Send to s3
-        ewoc_s3_upload(Path(work_dir), production_id)
+        ewoc_s3_upload(Path(upload_dir), production_id)
 
 
 @cli.command("s2c_db", help="Sen2cor Postgreqsl mode")
