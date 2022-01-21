@@ -2,6 +2,8 @@
 import json
 import logging
 import os
+from functools import reduce
+from operator import concat
 from pathlib import Path
 
 import click
@@ -57,14 +59,17 @@ def run_plan(plan, production_id, data_source, only_scl, no_sen2cor):
     l2a_dir.mkdir(exist_ok=True, parents=True)
     with open(plan) as file_plan:
         plan = json.load(file_plan)
-    for tile in plan:
+    tiles = plan["tiles"]
+    for tile in tiles:
         dem_tmp_dir = Path("/work/SEN2TEST/DEM/")
         dem_tmp_dir.mkdir(exist_ok=True, parents=True)
-        dem_syms = custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
+        dem_syms = custom_s2c_dem(tile["tile_id"], tmp_dir=dem_tmp_dir)
         count = 0
-        prods = plan[tile]["S2_PROC"]["INPUTS"]
+        prods = tile["s2_ids"]
+        # Flatten list of s2 products
+        prods = reduce(concat, prods)
         for pid in prods:
-            upload_dir = l2a_dir / "upload"
+            upload_dir = l2a_dir / f"upload_{pid}"
             upload_dir.mkdir(exist_ok=True, parents=True)
             out_dir_l2a = l2a_dir / "tmp_L2A"
             out_dir_l2a.mkdir(exist_ok=True, parents=True)
@@ -101,7 +106,6 @@ def run_plan(plan, production_id, data_source, only_scl, no_sen2cor):
                     clean(out_dir_l2a)
                     # Send to s3
                     ewoc_s3_upload(Path(upload_dir), production_id)
-                    clean(upload_dir)
                 count = +1
             except RuntimeError:
                 logger.info(f"Something went wrong with {pid}")
@@ -109,7 +113,6 @@ def run_plan(plan, production_id, data_source, only_scl, no_sen2cor):
         unlink(dem_syms)
         number_of_products = len(prods)
         logger.info("\n\nEnd of processing ")
-        # Check if
         logger.info(f"Processed {str(count)} of {str(number_of_products)}")
 
 
@@ -174,7 +177,6 @@ def run_id(pid, production_id, data_source, only_scl=False, no_sen2cor=False):
         unlink(dem_syms)
         # Send to s3
         ewoc_s3_upload(Path(upload_dir), production_id)
-        clean(upload_dir)
 
 
 @cli.command("s2c_db", help="Sen2cor Postgreqsl mode")
