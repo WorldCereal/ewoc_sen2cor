@@ -147,14 +147,17 @@ def run_id(pid, production_id, data_source, only_scl=False, no_sen2cor=False):
         # Run sen2cor in subprocess
         l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a, only_scl)
         # Convert the sen2cor output to ewoc ard format
-        upload_folder = l2a_to_ard(l2a_safe_folder, l2a_dir, only_scl)
+        work_dir = l2a_dir / "work"
+        work_dir.mkdir(exist_ok=True, parents=True)
+        print("\n".join(os.listdir(l2a_dir)))
+        l2a_to_ard(l2a_safe_folder, work_dir, only_scl)
         # Delete local folders
         clean(out_dir_l2a)
         clean(out_dir_l1c)
         clean(dem_tmp_dir)
         unlink(dem_syms)
         # Send to s3
-        ewoc_s3_upload(Path(upload_folder), production_id)
+        ewoc_s3_upload(Path(work_dir), production_id)
 
 
 @cli.command("s2c_db", help="Sen2cor Postgreqsl mode")
