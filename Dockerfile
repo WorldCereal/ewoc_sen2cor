@@ -5,7 +5,7 @@ ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
 ## Install dataship and eotile
-RUN apt-get update -y && apt-get install -y python3-pip && apt-get install -y wget \
+RUN apt-get update -y && apt-get install -y python3-pip && apt-get install -y wget git \
     && rm -rf /var/lib/apt/lists/*
 RUN pip3 install -U pip
 
@@ -13,16 +13,16 @@ ARG EOTILE_VERSION=0.2.6
 RUN pip3 install eotile>=${EOTILE_VERSION}
 
 
-ARG EWOC_DATASHIP_VERSION=0.2.2
+ARG EWOC_DATASHIP_VERSION=0.6.1
 LABEL EWOC_DATASHIP="${EWOC_DATASHIP_VERSION}"
-COPY dataship-${EWOC_DATASHIP_VERSION}.tar.gz /opt
-RUN pip3 install /opt/dataship-${EWOC_DATASHIP_VERSION}.tar.gz
+COPY ewoc_dag-${EWOC_DATASHIP_VERSION}.tar.gz /opt
+RUN pip3 install /opt/ewoc_dag-${EWOC_DATASHIP_VERSION}.tar.gz
 
 
-ARG EWOC_DB_VERSION=0.0.0
+ARG EWOC_DB_VERSION=0.2.1
 LABEL EWOC_DB="${EWOC_DB_VERSION}"
-ADD ewoc_db-${EWOC_DB_VERSION}-py2.py3-none-any.whl /opt
-RUN pip3 install /opt/ewoc_db-${EWOC_DB_VERSION}-py2.py3-none-any.whl
+COPY ewoc_db-${EWOC_DB_VERSION}.tar.gz /opt
+RUN pip3 install /opt/ewoc_db-${EWOC_DB_VERSION}.tar.gz
 
 ## Install sen2cor
 RUN wget --quiet -P /opt http://step.esa.int/thirdparties/sen2cor/2.9.0/Sen2Cor-02.09.00-Linux64.run \
@@ -40,6 +40,6 @@ RUN mkdir -p /root/sen2cor/2.9/dem/srtm
 #RUN tar -xvf /tmp/ESACCI-LC-L4-ALL-FOR-SEN2COR.tar -C /tmp/Sen2Cor-02.09.00-Linux64/lib/python2.7/site-packages/sen2cor/aux_data/
 
 ## Copy scripts
-COPY run_s2c.py /.
-COPY utils.py /.
-ENTRYPOINT ["python3"]
+COPY . /
+RUN pip install .
+ENTRYPOINT ["s2c"]
