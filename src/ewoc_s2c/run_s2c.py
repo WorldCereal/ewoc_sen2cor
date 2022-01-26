@@ -73,6 +73,8 @@ def run_plan(plan, production_id, data_source, only_scl, no_sen2cor):
             upload_dir.mkdir(exist_ok=True, parents=True)
             out_dir_l2a = l2a_dir / "tmp_L2A"
             out_dir_l2a.mkdir(exist_ok=True, parents=True)
+            if not pid.endswith(".SAFE"):
+                pid += ".SAFE"
             try:
                 if "L2A" in pid and not no_sen2cor:
                     raise AttributeError("Using L2A product with Sen2cor is impossible")
@@ -141,6 +143,8 @@ def run_id(pid, production_id, data_source, only_scl=False, no_sen2cor=False):
     l2a_dir.mkdir(exist_ok=True, parents=True)
     upload_dir = l2a_dir / "upload"
     upload_dir.mkdir(exist_ok=True, parents=True)
+    if not pid.endswith(".SAFE"):
+        pid += ".SAFE"
     if "L2A" in pid and not no_sen2cor:
         raise AttributeError("Using L2A product with Sen2cor is impossible")
 
