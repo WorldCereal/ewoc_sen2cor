@@ -4,9 +4,8 @@ import os
 import shutil
 import signal
 import sys
-import xml.etree.ElementTree as ET
 from contextlib import ContextDecorator
-from pathlib import Path, PurePath
+from pathlib import Path
 
 import boto3.exceptions
 import numpy as np
@@ -374,115 +373,3 @@ def unlink(links):
             logger.info(f" -- [Ok] Unlinked {symlink}")
         except FileNotFoundError:
             logger.info(f"Cannot unlink {symlink}")
-
-
-def build_safe_level1(pid, product_folder, safe_dest_folder):
-    """
-    Create SAFE folder from an L1C Sentinel-2 product
-    from an AWS download
-    :param product_folder:
-    :param safe_dest_folder:
-    :return: SAFE folder path
-    """
-    # Create root folder
-    if not pid.endswith(".SAFE"):
-        pid += ".SAFE"
-    root_safe_folder = PurePath.joinpath(Path(safe_dest_folder), Path(pid))
-    root_safe_folder.mkdir(parents=True, exist_ok=True)
-    # Find the manifest.safe file in the product folder
-    product_folder = Path(product_folder)
-    manifest_safe = list(product_folder.glob("tile/manifest.safe"))[0]
-    # Parse the manifest
-    tree = ET.parse(manifest_safe)
-    root = tree.getroot()
-    safe_struct = {"DATASTRIP": [], "GRANULE": [], "root": [], "HTML": []}
-    for file_loc in root.findall(".//fileLocation"):
-        loc = Path(file_loc.get("href"))
-        loc_parts = loc.parts
-        if len(loc_parts) == 1:
-            safe_struct["root"].append(loc)
-        elif len(loc_parts) > 1:
-            safe_struct[loc_parts[0]].append(loc)
-    # Create base folders: DATASTRIP, GRANULE, HTML, rep_info
-    # Create DATASTRIP folders
-    for datastrip_loc in safe_struct["DATASTRIP"]:
-        d_loc = datastrip_loc.parents[0]
-        d_loc = PurePath.joinpath(root_safe_folder, d_loc)
-        d_loc.mkdir(parents=True, exist_ok=True)
-    # Populate the DATASTRIP folder
-    # MTD_DS.xml
-    mtd_ds_fn = [el for el in safe_struct["DATASTRIP"] if "MTD_DS.xml" == el.name][0]
-    mtd_ds_aws = list(product_folder.glob("tile/*/*/metadata.xml"))[0]
-    shutil.copy(mtd_ds_aws, PurePath.joinpath(root_safe_folder, mtd_ds_fn))
-    # Report files
-    aws_reports = list(product_folder.glob("tile/*/*/*/*report.xml"))
-    qi_data_ds_folder = [
-        el.parent for el in safe_struct["DATASTRIP"] if el.parts[-2] == "QI_DATA"
-    ][0]
-    for qi_report in aws_reports:
-        report_name = qi_report.name
-        report_name = report_name.replace("_report", "")
-        shutil.copy(
-            qi_report,
-            PurePath.joinpath(root_safe_folder, qi_data_ds_folder / report_name),
-        )
-    # Create GRANULE folders
-    for granule_loc in safe_struct["GRANULE"]:
-        g_loc = granule_loc.parents[0]
-        g_loc = PurePath.joinpath(root_safe_folder, g_loc)
-        g_loc.mkdir(parents=True, exist_ok=True)
-    # Populate granule folders
-    # GRANULE/QI_DATA
-    qi_data_gr_folder = [
-        el.parent for el in safe_struct["GRANULE"] if el.parts[-2] == "QI_DATA"
-    ][0]
-    aws_gr_gml = list(product_folder.glob("product/qi/*.gml"))
-    for gr_gml in aws_gr_gml:
-        shutil.copy(
-            gr_gml, PurePath.joinpath(root_safe_folder, qi_data_gr_folder / gr_gml.name)
-        )
-    # Copy xml QA files
-    qi_xml_qa = list(product_folder.glob("product/qi/*.xml"))
-    for qi_xml in qi_xml_qa:
-        shutil.copy(
-            qi_xml, PurePath.joinpath(root_safe_folder, qi_data_gr_folder / qi_xml.name)
-        )
-    # GRANULE/AUX_DATA
-    ecmwft = list(product_folder.glob("product/*/ECMWFT"))[0]
-    aux_folder = [
-        el.parent for el in safe_struct["GRANULE"] if el.parts[-2] == "AUX_DATA"
-    ][0]
-    shutil.copy(ecmwft, PurePath.joinpath(root_safe_folder, aux_folder / "AUX_ECMWFT"))
-    # GRANULE/ IMG_DATA
-    img_jp2 = [el for el in safe_struct["GRANULE"] if el.parts[-2] == "IMG_DATA"]
-    img_data_folder = [
-        el.parent for el in safe_struct["GRANULE"] if el.parts[-2] == "IMG_DATA"
-    ][0]
-    for img in img_jp2:
-        band = img.name.split("_")[-1]
-        band_aws = list(product_folder.glob(f"product/{band}"))[0]
-        shutil.copy(
-            band_aws, PurePath.joinpath(root_safe_folder, img_data_folder / img.name)
-        )
-    # Copy manifest.safe
-    shutil.copy(manifest_safe, PurePath.joinpath(root_safe_folder, manifest_safe.name))
-    # Copy metadata.xml to MTD_MSIL1C.xml and MTD_TL.xml
-    mtd_msi = list(product_folder.glob("tile/metadata.xml"))[0]
-    shutil.copy(mtd_msi, PurePath.joinpath(root_safe_folder, Path("MTD_MSIL1C.xml")))
-    mtd_tl = list(product_folder.glob("product/metadata.xml"))[0]
-    shutil.copy(
-        mtd_tl,
-        PurePath.joinpath(
-            root_safe_folder, PurePath.joinpath(qi_data_gr_folder.parent, "MTD_TL.xml")
-        ),
-    )
-    # Copy inspire xml
-    insp_xml = list(product_folder.glob("tile/inspire.xml"))[0]
-    shutil.copy(insp_xml, PurePath.joinpath(root_safe_folder, Path("INSPIRE.xml")))
-    # Create rep_info folder (Empty folder missing info on aws)
-    rep_info = root_safe_folder / "rep_info"
-    rep_info.mkdir(parents=True, exist_ok=True)
-    # Create HTML folder
-    html = root_safe_folder / "HTML"
-    html.mkdir(parents=True, exist_ok=True)
-    return root_safe_folder
