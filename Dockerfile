@@ -42,4 +42,3 @@ RUN mkdir -p /root/sen2cor/2.9/dem/srtm
 ## Copy scripts
 COPY . /
 RUN pip install .
-ENTRYPOINT ["s2c"]
