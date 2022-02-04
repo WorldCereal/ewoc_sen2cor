@@ -1,4 +1,5 @@
 """ EWoC Sen2Cor utils module"""
+import glob
 import logging
 import os
 import shutil
@@ -12,6 +13,7 @@ import numpy as np
 import rasterio
 from eotile.eotile_module import main
 from ewoc_dag.bucket.ewoc import EWOCARDBucket, EWOCAuxDataBucket
+from ewoc_dag.cli_dem import get_dem_data
 from ewoc_dag.utils import find_l2a_band, get_s2_prodname, raster_to_ard
 from rasterio.merge import merge
 
@@ -319,32 +321,35 @@ def make_tmp_dirs(work_dir):
     return out_dir_in, out_dir_proc
 
 
-def custom_s2c_dem(tile_id, tmp_dir):
+def custom_s2c_dem(dem_type, tile_id, tmp_dir):
     """
-    Download and create an srtm mosaïc
+    Download and create a DEM mosaïc
+    :param dem_type: DEM type (srtm or copdem)
     :param tile_id: MGRS tile id (ex 31TCJ Toulouse)
     :param tmp_dir: Output directory
     :return: list of links to the downloaded DEM files
     """
-    srt_90 = main(tile_id, no_l8=True, no_s2=True, srtm5x5=True, overlap=True)
-    srt_90 = srt_90[-1]
-    srtm_ids = list(srt_90["id"])
-    # Clear the srtm folder from tiles remaining from previous runs
-    s2c_docker_srtm_folder = "/root/sen2cor/2.9/dem/srtm"
-    clean(s2c_docker_srtm_folder)
-    logger.info("/root/sen2cor/2.9/dem/srtm --> clean (deleted)")
-    # Create (back) the srtm folder
-    os.makedirs(s2c_docker_srtm_folder)
-    logger.info("/root/sen2cor/2.9/dem/srtm --> created")
-    # download the zip files
-    bucket = EWOCAuxDataBucket()
-    bucket.download_srtm3s_tiles(srtm_ids, Path(tmp_dir))
+    # Clear the folder from tiles remaining from previous runs
+    s2c_docker_dem_folder = f"/root/sen2cor/2.9/dem/{dem_type}"
+    clean(s2c_docker_dem_folder)
+    logger.info(f"/root/sen2cor/2.9/dem/{dem_type} --> clean (deleted)")
+    # Create (back) the dem folder
+    os.makedirs(s2c_docker_dem_folder)
+    logger.info(f"/root/sen2cor/2.9/dem/{dem_type} --> created")
+    # Download the dem files
+    if dem_type=="srtm":
+        get_dem_data(tile_id, Path(tmp_dir), dem_source="ewoc", dem_type=dem_type, dem_resolution="3s")
+        raster_list = glob.glob(os.path.join(tmp_dir, "srtm3s", "*.tif"))
+    elif dem_type=="copdem":
+        get_dem_data(tile_id, Path(tmp_dir), dem_source="aws", dem_type=dem_type, dem_resolution="3s")
+        raster_list = glob.glob(os.path.join(tmp_dir, "*.tif"))
+    else:
+        raise AttributeError("Attribute dem_type must be srtm or copdem")
 
     sources = []
-    output_fn = os.path.join(tmp_dir, f'mosaic_{"_".join(srtm_ids)}.tif')
+    output_fn = os.path.join(tmp_dir, 'mosaic.tif')
 
-    for srtm_id in srtm_ids:
-        raster_name = os.path.join(tmp_dir, "srtm3s", srtm_id + ".tif")
+    for raster_name in raster_list:
         src = rasterio.open(raster_name)
         sources.append(src)
     merge(sources, dst_path=output_fn, method="max")
@@ -352,10 +357,12 @@ def custom_s2c_dem(tile_id, tmp_dir):
     for src in sources:
         src.close()
     links = []
-    for tile in srtm_ids:
+    for raster_name in raster_list:
         try:
-            os.symlink(output_fn, os.path.join(s2c_docker_srtm_folder, tile + ".tif"))
-            links.append(os.path.join(s2c_docker_srtm_folder, tile + ".tif"))
+            if dem_type=="copdem":
+		raster_name = os.path.basename(raster_name).replace("_COG_", "_")
+            os.symlink(output_fn, os.path.join(s2c_docker_dem_folder, raster_name))
+            links.append(os.path.join(s2c_docker_dem_folder, raster_name))
         except OSError:
             logger.info("Symlink error: probably already exists")
     return links

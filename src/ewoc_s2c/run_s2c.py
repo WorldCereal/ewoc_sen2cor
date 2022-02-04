@@ -126,14 +126,17 @@ def run_plan(plan, production_id, data_source, only_scl, no_sen2cor):
     help="Production ID that will be used to upload to s3 bucket. " "Default: 0000",
 )
 @click.option("-ds", "--data_source", default="creodias")
+@click.option("-dem", "--dem_type", default="srtm", help="DEM that will be used in the process")
 @click.option("-sc", "--only_scl", default=False, is_flag=True)
 @click.option("--no_sen2cor", help="Do not process with Sen2cor", is_flag=True)
-def run_id(pid, production_id, data_source, only_scl=False, no_sen2cor=False):
+def run_id(pid, production_id, data_source, dem_type, only_scl=False, no_sen2cor=False):
     """
     Run Sen2Cor with a product ID
     :param pid: Sentinel-2 product identifier
     :param l2a_dir: Output folder
     :param production_id: Special identifier
+    :param data_source: Sentinel-2 product data source
+    :param dem_type: DEM type
     :param only_scl: True to process scl only
     :param no_sen2cor: Download directly, no local atmospheric correction
     :return: None
@@ -162,7 +165,7 @@ def run_id(pid, production_id, data_source, only_scl=False, no_sen2cor=False):
         dem_tmp_dir = Path("/work/SEN2TEST/DEM/")
         dem_tmp_dir.mkdir(exist_ok=True, parents=True)
         tile = pid.split("_")[5][1:]
-        dem_syms = custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
+        dem_syms = custom_s2c_dem(dem_type, tile, tmp_dir=dem_tmp_dir)
         out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
         # Get Sat product by id using ewoc_dag
         if data_source == "aws":
