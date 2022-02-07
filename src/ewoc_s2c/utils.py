@@ -155,8 +155,7 @@ def l2a_to_ard(l2a_folder: Path, work_dir: Path, only_scl: bool = False)-> Path:
             logger.info("Done --> " + str(raster_fn))
     return ard_folder
 
-
-def get_s2_prodname(safe_path):
+def get_s2_prodname(safe_path: Path)->str:
     """
     Get Sentinel-2 product name
     :param safe_path: Path to SAFE folder
@@ -164,13 +163,13 @@ def get_s2_prodname(safe_path):
     :return: Product name
     :rtype: str
     """
-    safe_split = safe_path.split("/")
+    safe_split = str(safe_path).split("/")
     prodname = [item for item in safe_split if ".SAFE" in item][0]
     prodname = prodname.replace(".SAFE", "")
     return prodname
 
 
-def raster_to_ard(raster_path, band_num, raster_fn):
+def raster_to_ard(raster_path: Path, band_num: str, raster_fn: Path):
     """
     Read raster and update internals to fit ewoc ard specs
     :param raster_path: Path to raster file
@@ -199,7 +198,7 @@ def raster_to_ard(raster_path, band_num, raster_fn):
         out.write(raster_array)
 
 
-def find_l2a_band(l2a_folder, band_num, res):
+def find_l2a_band(l2a_folder: Path, band_num: str, res: int)->Path:
     """
     Find L2A band at specific resolution
     :param l2a_folder: L2A product folder
@@ -207,12 +206,12 @@ def find_l2a_band(l2a_folder, band_num, res):
     :param res: resolution (10/20/60)
     :return: path to band
     """
-    band_path = None
+    # band_path = None
     id = f"{band_num}_{str(res)}m.jp2"
-    for root, dirs, files in os.walk(l2a_folder):
+    for root, dirs, files in walk(l2a_folder):
         for file in files:
             if file.endswith(id):
-                band_path = os.path.join(root, file)
+                band_path = root / file
     return band_path
 
 
