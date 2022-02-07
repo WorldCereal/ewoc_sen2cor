@@ -14,7 +14,6 @@ import numpy as np
 import rasterio
 from eotile.eotile_module import main
 from ewoc_dag.bucket.ewoc import EWOCARDBucket, EWOCAuxDataBucket
-from ewoc_dag.utils import find_l2a_band, get_s2_prodname, raster_to_ard
 from rasterio.merge import merge
 
 logger = logging.getLogger(__name__)
@@ -155,6 +154,66 @@ def l2a_to_ard(l2a_folder: Path, work_dir: Path, only_scl: bool = False)-> Path:
             raster_to_ard(band_path, band, raster_fn)
             logger.info("Done --> " + str(raster_fn))
     return ard_folder
+
+
+def get_s2_prodname(safe_path):
+    """
+    Get Sentinel-2 product name
+    :param safe_path: Path to SAFE folder
+    :type safe_path: str
+    :return: Product name
+    :rtype: str
+    """
+    safe_split = safe_path.split("/")
+    prodname = [item for item in safe_split if ".SAFE" in item][0]
+    prodname = prodname.replace(".SAFE", "")
+    return prodname
+
+
+def raster_to_ard(raster_path, band_num, raster_fn):
+    """
+    Read raster and update internals to fit ewoc ard specs
+    :param raster_path: Path to raster file
+    :param band_num: Band number, B02 for example
+    :param raster_fn: Output raster path
+    """
+    with rasterio.Env(GDAL_CACHEMAX=2048):
+        with rasterio.open(raster_path, "r") as src:
+            raster_array = src.read()
+            meta = src.meta.copy()
+    meta["driver"] = "GTiff"
+    meta["nodata"] = 0
+    bands_10m = ["B02", "B03", "B04", "B08"]
+    blocksize = 512
+    if band_num in bands_10m:
+        blocksize = 1024
+    with rasterio.open(
+        raster_fn,
+        "w+",
+        **meta,
+        tiled=True,
+        compress="deflate",
+        blockxsize=blocksize,
+        blockysize=blocksize,
+    ) as out:
+        out.write(raster_array)
+
+
+def find_l2a_band(l2a_folder, band_num, res):
+    """
+    Find L2A band at specific resolution
+    :param l2a_folder: L2A product folder
+    :param band_num: BXX/AOT/SCL/...
+    :param res: resolution (10/20/60)
+    :return: path to band
+    """
+    band_path = None
+    id = f"{band_num}_{str(res)}m.jp2"
+    for root, dirs, files in os.walk(l2a_folder):
+        for file in files:
+            if file.endswith(id):
+                band_path = os.path.join(root, file)
+    return band_path
 
 
 def set_logger(verbose_v: str):
