@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import signal
+import subprocess
 import sys
 from contextlib import ContextDecorator
 from pathlib import Path
@@ -218,7 +219,7 @@ def run_s2c(
         s2c_cmd = (
             f"{bin_path} {l1c_safe} --output_dir {l2a_out} --resolution 10 --debug"
         )
-    os.system(s2c_cmd)
+    execute_cmd(s2c_cmd)
     # TODO: select folder using date and tile id from l1 id
     l2a_safe_folder = [
         l2a_out / fold
@@ -365,3 +366,15 @@ def walk(path: Path):
             continue
         yield p.resolve()
 
+
+def execute_cmd(cmd: str):
+    """
+    Execute the given cmd.
+    :param cmd: The command and its parameters to execute
+    """
+    logger.debug("Launching command: %s", cmd)
+    try:
+        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    except OSError as err:
+        logger.error('An error occurred while running command \'%s\'', cmd, exc_info=True)
+        return err.errno, str(err), err.strerror 
