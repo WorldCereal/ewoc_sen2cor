@@ -21,6 +21,7 @@ from ewoc_s2c.utils import (
     run_s2c,
     set_logger,
     unlink,
+    edit_xml_config_file,
 )
 
 logger = logging.getLogger(__name__)
@@ -161,6 +162,8 @@ def run_id(pid, production_id, data_source, dem_type, only_scl=False, no_sen2cor
         else:
             raise NotImplementedError("Only the SCL MASK production is implemented")
     else:
+        # Edit config file
+        edit_xml_config_file(dem_type)
         # Generate temporary folders
         dem_tmp_dir = Path("/work/SEN2TEST/DEM/")
         dem_tmp_dir.mkdir(exist_ok=True, parents=True)

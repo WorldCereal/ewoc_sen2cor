@@ -16,6 +16,7 @@ from ewoc_dag.bucket.ewoc import EWOCARDBucket, EWOCAuxDataBucket
 from ewoc_dag.cli_dem import get_dem_data
 from ewoc_dag.utils import find_l2a_band, get_s2_prodname, raster_to_ard
 from rasterio.merge import merge
+import lxml.etree as ET
 
 logger = logging.getLogger(__name__)
 
@@ -360,7 +361,7 @@ def custom_s2c_dem(dem_type, tile_id, tmp_dir):
     for raster_name in raster_list:
         try:
             if dem_type=="copdem":
-		raster_name = os.path.basename(raster_name).replace("_COG_", "_")
+                raster_name = os.path.basename(raster_name).replace("_COG_", "_")
             os.symlink(output_fn, os.path.join(s2c_docker_dem_folder, raster_name))
             links.append(os.path.join(s2c_docker_dem_folder, raster_name))
         except OSError:
@@ -380,3 +381,24 @@ def unlink(links):
             logger.info(f" -- [Ok] Unlinked {symlink}")
         except FileNotFoundError:
             logger.info(f"Cannot unlink {symlink}")
+
+
+def edit_xml_config_file(dem_type):
+    """
+    Edit xml config file depending on DEM used
+    :param dem_type: DEM type
+    """
+    s2c_docker_cfg_file = f"/home/mbattude/sen2cor/2.9/cfg/L2A_GIPP.xml"
+    tree = ET.parse(s2c_docker_cfg_file)
+    root = tree.getroot()
+    for name in root.iter('DEM_Directory'):
+        name.text = f'dem/{dem_type}'
+    for name in root.iter('DEM_Reference'):
+        if dem_type == 'srtm':
+            name.text = 'http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF/'
+        elif dem_type == 'copdem':
+            name.text = 'NONE'
+        else:
+            raise AttributeError("Attribute dem_type must be srtm or copdem")
+    tree.write(s2c_docker_cfg_file, encoding='utf-8', xml_declaration=True) 
+    logger.info(f"{s2c_docker_cfg_file} --> edited with DEM infos")
