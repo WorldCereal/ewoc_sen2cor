@@ -1,4 +1,5 @@
 """ EWoC Sen2Cor utils module"""
+from datetime import datetime
 import logging
 import os
 import shutil
@@ -15,6 +16,8 @@ import rasterio
 from eotile.eotile_module import main
 from ewoc_dag.bucket.ewoc import EWOCARDBucket, EWOCAuxDataBucket
 from rasterio.merge import merge
+
+from ewoc_s2c import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +59,16 @@ def binary_scl(scl_file: Path, raster_fn: Path):
         blockxsize=512,
         blockysize=512,
     ) as out:
+        # Modify output metadata
+        out.update_tags(TIFFTAG_DATETIME=str(datetime.now()))
+        out.update_tags(TIFFTAG_IMAGEDESCRIPTION='EWoC Sentinel-2 ARD')
+        processor_docker_version = os.getenv('EWOC_S2_DOCKER_VERSION')
+        if processor_docker_version is None:
+            out.update_tags(TIFFTAG_SOFTWARE='EWoC S2 Processor '+ str(__version__))
+        else:
+            out.update_tags(TIFFTAG_SOFTWARE='EWoC S2 Processor '+ \
+                str(__version__) + ' / ' + processor_docker_version)
+
         out.write(mask.astype(rasterio.uint8), 1)
 
 
@@ -195,6 +208,16 @@ def raster_to_ard(raster_path: Path, band_num: str, raster_fn: Path):
         blockxsize=blocksize,
         blockysize=blocksize,
     ) as out:
+        # Modify output metadata
+        out.update_tags(TIFFTAG_DATETIME=str(datetime.now()))
+        out.update_tags(TIFFTAG_IMAGEDESCRIPTION='EWoC Sentinel-2 ARD')
+        processor_docker_version = os.getenv('EWOC_S2_DOCKER_VERSION')
+        if processor_docker_version is None:
+            out.update_tags(TIFFTAG_SOFTWARE='EWoC S2 Processor '+ str(__version__))
+        else:
+            out.update_tags(TIFFTAG_SOFTWARE='EWoC S2 Processor '+ \
+                str(__version__) + ' / ' + processor_docker_version)
+
         out.write(raster_array)
 
 
