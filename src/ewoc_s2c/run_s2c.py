@@ -62,9 +62,7 @@ def run_plan(plan, production_id, data_source, only_scl, no_sen2cor):
         plan = json.load(file_plan)
     tiles = plan["tiles"]
     for tile in tiles:
-        dem_tmp_dir = Path("/work/SEN2TEST/DEM/")
-        dem_tmp_dir.mkdir(exist_ok=True, parents=True)
-        dem_syms = custom_s2c_dem(tile["tile_id"], tmp_dir=dem_tmp_dir)
+        dem_tmp_dir, dem_syms = custom_s2c_dem(tile["tile_id"])
         count = 0
         prods = tile["s2_ids"]
         # Flatten list of s2 products
@@ -164,11 +162,9 @@ def run_id(pid, production_id, data_source, dem_type, only_scl=False, no_sen2cor
     else:
         # Edit config file
         edit_xml_config_file(dem_type)
-        # Generate temporary folders
-        dem_tmp_dir = Path("/work/SEN2TEST/DEM/")
-        dem_tmp_dir.mkdir(exist_ok=True, parents=True)
+        # Download and create a DEM mosaic
         tile = pid.split("_")[5][1:]
-        dem_syms = custom_s2c_dem(dem_type, tile, tmp_dir=dem_tmp_dir)
+        dem_tmp_dir, dem_syms = custom_s2c_dem(dem_type, tile)
         out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
         # Get Sat product by id using ewoc_dag
         if data_source == "aws":
@@ -204,17 +200,13 @@ def run_id(pid, production_id, data_source, dem_type, only_scl=False, no_sen2cor
 )
 def run_db(executor, status_filter, production_id):
     l2a_dir = "/work/SEN2TEST/OUT/"
-    # Generate temporary folders
-    dem_tmp_dir = "/work/SEN2TEST/DEM/"
-    if not os.path.exists(dem_tmp_dir):
-        os.makedirs(dem_tmp_dir)
     out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
     # Get Sat product by id using eodag
     db_type = "fsmac"
     tile, _ = get_next_tile(db_type, executor, status_filter)
     pid = tile.products
     s2tile = pid.split("_")[5][1:]
-    custom_s2c_dem(s2tile, tmp_dir=dem_tmp_dir)
+    custom_s2c_dem(s2tile)
     bucket = CreodiasBucket()
     bucket.download_s2_prd(pid, Path(out_dir_l1c))
     logger.info(f"Download done for {pid}\n")

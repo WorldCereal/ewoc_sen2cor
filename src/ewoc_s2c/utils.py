@@ -7,6 +7,7 @@ import signal
 import sys
 from contextlib import ContextDecorator
 from pathlib import Path
+import uuid
 
 import boto3.exceptions
 import numpy as np
@@ -322,33 +323,40 @@ def make_tmp_dirs(work_dir):
     return out_dir_in, out_dir_proc
 
 
-def custom_s2c_dem(dem_type, tile_id, tmp_dir):
+def custom_s2c_dem(dem_type, tile_id):
     """
     Download and create a DEM mosaïc
     :param dem_type: DEM type (srtm or copdem)
     :param tile_id: MGRS tile id (ex 31TCJ Toulouse)
     :param tmp_dir: Output directory
-    :return: list of links to the downloaded DEM files
+    :return: DEM temporary directory and list of links to the downloaded DEM files
     """
+    # Generate temporary folder
+    dem_tmp_dir = Path("/home/mbattude/Documents/WorldCereal/EwoC_Data/SEN2TEST/DEM/")
+    if dem_tmp_dir.exists():
+        shutil.rmtree(dem_tmp_dir)
+    dem_tmp_dir.mkdir(exist_ok=False, parents=True)
     # Clear the folder from tiles remaining from previous runs
     s2c_docker_dem_folder = f"/root/sen2cor/2.9/dem/{dem_type}"
-    clean(s2c_docker_dem_folder)
-    logger.info(f"/root/sen2cor/2.9/dem/{dem_type} --> clean (deleted)")
+    if os.path.exists(s2c_docker_dem_folder):
+        clean(s2c_docker_dem_folder)
+        logger.info(f"/root/sen2cor/2.9/dem/{dem_type} --> clean (deleted)")
     # Create (back) the dem folder
     os.makedirs(s2c_docker_dem_folder)
     logger.info(f"/root/sen2cor/2.9/dem/{dem_type} --> created")
     # Download the dem files
     if dem_type=="srtm":
-        get_dem_data(tile_id, Path(tmp_dir), dem_source="ewoc", dem_type=dem_type, dem_resolution="3s")
-        raster_list = glob.glob(os.path.join(tmp_dir, "srtm3s", "*.tif"))
+        get_dem_data(tile_id, Path(dem_tmp_dir), dem_source="ewoc", dem_type=dem_type, dem_resolution="3s")
+        raster_list = glob.glob(os.path.join(dem_tmp_dir, "srtm3s", "*.tif"))
     elif dem_type=="copdem":
-        get_dem_data(tile_id, Path(tmp_dir), dem_source="aws", dem_type=dem_type, dem_resolution="3s")
-        raster_list = glob.glob(os.path.join(tmp_dir, "*.tif"))
+        get_dem_data(tile_id, Path(dem_tmp_dir), dem_source="aws", dem_type=dem_type, dem_resolution="3s")
+        raster_list = glob.glob(os.path.join(dem_tmp_dir, "*.tif"))
     else:
         raise AttributeError("Attribute dem_type must be srtm or copdem")
 
     sources = []
-    output_fn = os.path.join(tmp_dir, 'mosaic.tif')
+    uid = uuid.uuid4()
+    output_fn = os.path.join(dem_tmp_dir, f'mosaic_{uid}.tif')
 
     for raster_name in raster_list:
         src = rasterio.open(raster_name)
@@ -362,11 +370,13 @@ def custom_s2c_dem(dem_type, tile_id, tmp_dir):
         try:
             if dem_type=="copdem":
                 raster_name = os.path.basename(raster_name).replace("_COG_", "_")
+            elif dem_type=='srtm':
+                raster_name = os.path.basename(raster_name)
             os.symlink(output_fn, os.path.join(s2c_docker_dem_folder, raster_name))
             links.append(os.path.join(s2c_docker_dem_folder, raster_name))
         except OSError:
             logger.info("Symlink error: probably already exists")
-    return links
+    return dem_tmp_dir, links
 
 
 def unlink(links):
@@ -388,7 +398,7 @@ def edit_xml_config_file(dem_type):
     Edit xml config file depending on DEM used
     :param dem_type: DEM type
     """
-    s2c_docker_cfg_file = f"/home/mbattude/sen2cor/2.9/cfg/L2A_GIPP.xml"
+    s2c_docker_cfg_file = f"/root/sen2cor/2.9/cfg/L2A_GIPP.xml"
     tree = ET.parse(s2c_docker_cfg_file)
     root = tree.getroot()
     for name in root.iter('DEM_Directory'):
