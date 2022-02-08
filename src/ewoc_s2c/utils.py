@@ -154,7 +154,7 @@ def l2a_to_ard(l2a_folder: Path, work_dir: Path, only_scl: bool = False)-> Path:
             binary_scl(band_path, raster_cld)
             logger.info("Done --> " + str(raster_cld))
             try:
-                (raster_cld / ".aux.xml").unlink()
+                (raster_cld.with_suffix('.aux.xml')).unlink()
             except FileNotFoundError:
                 logger.info("Clean")
 
@@ -221,10 +221,9 @@ def find_l2a_band(l2a_folder: Path, band_num: str, res: int)->Path:
     """
     # band_path = None
     id = f"{band_num}_{str(res)}m.jp2"
-    for root, dirs, files in walk(l2a_folder):
-        for file in files:
-            if file.endswith(id):
-                band_path = root / file
+    for file in walk(l2a_folder):
+        if str(file).endswith(id):
+            band_path = file
     return band_path
 
 
@@ -399,7 +398,7 @@ def custom_s2c_dem(tile_id: str, tmp_dir: Path)->List:
     output_fn = tmp_dir / f'mosaic_{"_".join(srtm_ids)}.tif'
 
     for srtm_id in srtm_ids:
-        raster_name = tmp_dir / "srtm3s", srtm_id + ".tif"
+        raster_name = tmp_dir / "srtm3s" / (srtm_id + '.tif')
         src = rasterio.open(raster_name)
         sources.append(src)
     merge(sources, dst_path=output_fn, method="max")
@@ -409,8 +408,8 @@ def custom_s2c_dem(tile_id: str, tmp_dir: Path)->List:
     links = []
     for tile in srtm_ids:
         try:
-            (s2c_docker_srtm_folder / tile / ".tif").symlink_to(output_fn)
-            links.append(s2c_docker_srtm_folder / tile / ".tif")
+            (s2c_docker_srtm_folder / (tile + ".tif")).symlink_to(output_fn)
+            links.append(s2c_docker_srtm_folder / (tile + ".tif"))
         except OSError:
             logger.info("Symlink error: probably already exists")
     return links
