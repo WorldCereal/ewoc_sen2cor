@@ -332,7 +332,7 @@ def custom_s2c_dem(dem_type, tile_id):
     :return: DEM temporary directory and list of links to the downloaded DEM files
     """
     # Generate temporary folder
-    dem_tmp_dir = Path("/home/mbattude/Documents/WorldCereal/EwoC_Data/SEN2TEST/DEM/")
+    dem_tmp_dir = Path("/work/SEN2TEST/DEM/")
     if dem_tmp_dir.exists():
         shutil.rmtree(dem_tmp_dir)
     dem_tmp_dir.mkdir(exist_ok=False, parents=True)
