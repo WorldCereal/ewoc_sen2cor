@@ -62,12 +62,7 @@ def binary_scl(scl_file: Path, raster_fn: Path):
         # Modify output metadata
         out.update_tags(TIFFTAG_DATETIME=str(datetime.now()))
         out.update_tags(TIFFTAG_IMAGEDESCRIPTION='EWoC Sentinel-2 ARD')
-        processor_docker_version = os.getenv('EWOC_S2_DOCKER_VERSION')
-        if processor_docker_version is None:
-            out.update_tags(TIFFTAG_SOFTWARE='EWoC S2 Processor '+ str(__version__))
-        else:
-            out.update_tags(TIFFTAG_SOFTWARE='EWoC S2 Processor '+ \
-                str(__version__) + ' / ' + processor_docker_version)
+        out.update_tags(TIFFTAG_SOFTWARE='EWoC S2 Processor '+ str(__version__))
 
         out.write(mask.astype(rasterio.uint8), 1)
 
@@ -211,12 +206,7 @@ def raster_to_ard(raster_path: Path, band_num: str, raster_fn: Path):
         # Modify output metadata
         out.update_tags(TIFFTAG_DATETIME=str(datetime.now()))
         out.update_tags(TIFFTAG_IMAGEDESCRIPTION='EWoC Sentinel-2 ARD')
-        processor_docker_version = os.getenv('EWOC_S2_DOCKER_VERSION')
-        if processor_docker_version is None:
-            out.update_tags(TIFFTAG_SOFTWARE='EWoC S2 Processor '+ str(__version__))
-        else:
-            out.update_tags(TIFFTAG_SOFTWARE='EWoC S2 Processor '+ \
-                str(__version__) + ' / ' + processor_docker_version)
+        out.update_tags(TIFFTAG_SOFTWARE='EWoC S2 Processor '+ str(__version__))
 
         out.write(raster_array)
 
