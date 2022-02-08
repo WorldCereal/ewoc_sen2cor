@@ -57,7 +57,10 @@ def cli(verbose):
 @click.option("--no_sen2cor", help="Do not process with Sen2cor", is_flag=True)
 def run_plan(plan, production_id, data_source, only_scl, no_sen2cor):
     l2a_dir = Path("/work/SEN2TEST/OUT/")
-    l2a_dir.mkdir(exist_ok=True, parents=True)
+    if os.path.exists(l2a_dir):
+        clean(l2a_dir)
+        logger.info(f"Cleared {l2a_dir}")
+    l2a_dir.mkdir(exist_ok=False, parents=True)
     with open(plan) as file_plan:
         plan = json.load(file_plan)
     tiles = plan["tiles"]
@@ -142,7 +145,10 @@ def run_id(pid, production_id, data_source, dem_type, only_scl=False, no_sen2cor
     """
 
     l2a_dir = Path("/work/SEN2TEST/OUT/")
-    l2a_dir.mkdir(exist_ok=True, parents=True)
+    if os.path.exists(l2a_dir):
+        clean(l2a_dir)
+        logger.info(f"Cleared {l2a_dir}")
+    l2a_dir.mkdir(exist_ok=False, parents=True)
     upload_dir = l2a_dir / "upload"
     upload_dir.mkdir(exist_ok=True, parents=True)
     if not pid.endswith(".SAFE"):

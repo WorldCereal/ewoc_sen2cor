@@ -15,6 +15,7 @@ import rasterio
 from eotile.eotile_module import main
 from ewoc_dag.bucket.ewoc import EWOCARDBucket, EWOCAuxDataBucket
 from ewoc_dag.cli_dem import get_dem_data
+from ewoc_dag.srtm_dag import get_srtm3s_ids
 from ewoc_dag.utils import find_l2a_band, get_s2_prodname, raster_to_ard
 from rasterio.merge import merge
 import lxml.etree as ET
@@ -303,11 +304,8 @@ def init_folder(folder_path):
         logger.info(f"Found {folder_path} -- start reset")
         clean(folder_path)
         logger.info(f"Cleared {folder_path}")
-        os.makedirs(folder_path)
-        logger.info(f"Created new folder {folder_path}")
-    else:
-        os.makedirs(folder_path)
-        logger.info(f"Created new folder {folder_path}")
+    os.makedirs(folder_path)
+    logger.info(f"Created new folder {folder_path}")
 
 
 def make_tmp_dirs(work_dir):
@@ -366,11 +364,17 @@ def custom_s2c_dem(dem_type, tile_id):
     for src in sources:
         src.close()
     links = []
+
+    # Artificially change copdem filenames to srtm filenames to run sen2cor 2.9 with copdem
+    if dem_type == 'copdem':
+        raster_list = get_srtm3s_ids(tile_id)
+    
     for raster_name in raster_list:
         try:
             if dem_type=="copdem":
-                raster_name = os.path.basename(raster_name).replace("_COG_", "_")
-            elif dem_type=='srtm':
+                raster_name = raster_name + '.tif' 
+		# raster_name = os.path.basename(raster_name).replace("_COG_", "_")
+            if dem_type=='srtm':
                 raster_name = os.path.basename(raster_name)
             os.symlink(output_fn, os.path.join(s2c_docker_dem_folder, raster_name))
             links.append(os.path.join(s2c_docker_dem_folder, raster_name))
