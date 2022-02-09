@@ -55,17 +55,17 @@ def cli(verbose):
 @click.option("-ds", "--data_source", default="creodias")
 @click.option("-sc", "--only_scl", default=False, is_flag=True)
 @click.option("--no_sen2cor", help="Do not process with Sen2cor", is_flag=True)
-def run_plan(plan, production_id, data_source, only_scl, no_sen2cor):
+def run_plan(plan, production_id, data_source, dem_type, only_scl, no_sen2cor):
     l2a_dir = Path("/work/SEN2TEST/OUT/")
     if os.path.exists(l2a_dir):
         clean(l2a_dir)
-        logger.info(f"Cleared {l2a_dir}")
+        logger.info("Cleared %s", l2a_dir)
     l2a_dir.mkdir(exist_ok=False, parents=True)
-    with open(plan) as file_plan:
+    with open(plan, encoding="utf-8") as file_plan:
         plan = json.load(file_plan)
     tiles = plan["tiles"]
     for tile in tiles:
-        dem_tmp_dir, dem_syms = custom_s2c_dem(tile["tile_id"])
+        dem_tmp_dir, dem_syms = custom_s2c_dem(dem_type, tile["tile_id"])
         count = 0
         prods = tile["s2_ids"]
         # Flatten list of s2 products
@@ -112,12 +112,12 @@ def run_plan(plan, production_id, data_source, only_scl, no_sen2cor):
                     ewoc_s3_upload(Path(upload_dir), production_id)
                 count = +1
             except RuntimeError:
-                logger.info(f"Something went wrong with {pid}")
+                logger.info("Something went wrong with %s", pid)
         clean(dem_tmp_dir)
         unlink(dem_syms)
         number_of_products = len(prods)
         logger.info("\n\nEnd of processing ")
-        logger.info(f"Processed {str(count)} of {str(number_of_products)}")
+        logger.info("Processed %s of %s", str(count), str(number_of_products))
 
 
 @cli.command("s2c_id", help="Sen2cor for on product using EOdag ID")
@@ -147,7 +147,7 @@ def run_id(pid, production_id, data_source, dem_type, only_scl=False, no_sen2cor
     l2a_dir = Path("/work/SEN2TEST/OUT/")
     if os.path.exists(l2a_dir):
         clean(l2a_dir)
-        logger.info(f"Cleared {l2a_dir}")
+        logger.info("Cleared %s", l2a_dir)
     l2a_dir.mkdir(exist_ok=False, parents=True)
     upload_dir = l2a_dir / "upload"
     upload_dir.mkdir(exist_ok=True, parents=True)
@@ -175,10 +175,10 @@ def run_id(pid, production_id, data_source, dem_type, only_scl=False, no_sen2cor
         # Get Sat product by id using ewoc_dag
         if data_source == "aws":
             l1c_safe_folder = get_s2_product(
-                pid, l2a_dir, source=data_source, aws_l1c_safe=True
+                pid, out_dir_l1c, source=data_source, aws_l1c_safe=True
             )
         else:
-            l1c_safe_folder = get_s2_product(pid, l2a_dir, source=data_source)
+            l1c_safe_folder = get_s2_product(pid, out_dir_l1c, source=data_source)
         # Run sen2cor in subprocess
         l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a, only_scl)
         # Convert the sen2cor output to ewoc ard format
@@ -204,7 +204,7 @@ def run_id(pid, production_id, data_source, dem_type, only_scl=False, no_sen2cor
     default="0000",
     help="Production ID that will be used to upload to s3 bucket. " "Default: 0000",
 )
-def run_db(executor, status_filter, production_id):
+def run_db(executor, status_filter, production_id, dem_type):
     l2a_dir = "/work/SEN2TEST/OUT/"
     out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
     # Get Sat product by id using eodag
@@ -212,10 +212,10 @@ def run_db(executor, status_filter, production_id):
     tile, _ = get_next_tile(db_type, executor, status_filter)
     pid = tile.products
     s2tile = pid.split("_")[5][1:]
-    custom_s2c_dem(s2tile)
+    custom_s2c_dem(dem_type, s2tile)
     bucket = CreodiasBucket()
     bucket.download_s2_prd(pid, Path(out_dir_l1c))
-    logger.info(f"Download done for {pid}\n")
+    logger.info("Download done for %s\n", pid)
     # Make sure to get the right path to the SAFE folder!
     # TODO make this list comprehension more robust using regex
     l1c_safe_folder = [

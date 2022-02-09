@@ -12,8 +12,7 @@ import uuid
 import boto3.exceptions
 import numpy as np
 import rasterio
-from eotile.eotile_module import main
-from ewoc_dag.bucket.ewoc import EWOCARDBucket, EWOCAuxDataBucket
+from ewoc_dag.bucket.ewoc import EWOCARDBucket
 from ewoc_dag.cli_dem import get_dem_data
 from ewoc_dag.srtm_dag import get_srtm3s_ids
 from ewoc_dag.utils import find_l2a_band, get_s2_prodname, raster_to_ard
@@ -159,14 +158,14 @@ def l2a_to_ard(l2a_folder, work_dir, only_scl=False):
         band_path = find_l2a_band(l2a_folder, band, bands[band])
         band_name = os.path.split(band_path)[-1]
         band_name = band_name.replace(".jp2", ".tif").replace(f"_{str(res)}m", "")
-        logger.info("Processing band " + band_name)
+        logger.info("Processing band %s", band_name)
         out_name = f"{platform}_{atcor_algo}_{date}_{unique_id}_{tile_id}_{band}.tif"
         raster_fn = os.path.join(folder_st, dir_name, out_name)
         if band == "SCL":
             out_cld = f"{platform}_{atcor_algo}_{date}_{unique_id}_{tile_id}_MASK.tif"
             raster_cld = os.path.join(folder_st, dir_name, out_cld)
             binary_scl(band_path, raster_cld)
-            logger.info("Done --> " + raster_cld)
+            logger.info("Done --> %s", raster_cld)
             try:
                 os.remove(raster_cld + ".aux.xml")
             except FileNotFoundError:
@@ -174,7 +173,7 @@ def l2a_to_ard(l2a_folder, work_dir, only_scl=False):
 
         else:
             raster_to_ard(band_path, band, raster_fn)
-            logger.info("Done --> " + raster_fn)
+            logger.info("Done --> %s", raster_fn)
     return ard_folder
 
 
@@ -289,7 +288,7 @@ def ewoc_s3_upload(local_path, ard_prd_prefix):
         s3_bucket.upload_ard_prd(local_path, ard_prd_prefix)
         # <!> Delete output folder after upload
         clean(local_path)
-        logger.info(f"{local_path} cleared")
+        logger.info("%s cleared", local_path)
     except boto3.exceptions.S3UploadFailedError:
         logger.info("Could not upload output folder to s3, results saved locally")
 
@@ -301,11 +300,11 @@ def init_folder(folder_path):
     :return: None
     """
     if os.path.exists(folder_path):
-        logger.info(f"Found {folder_path} -- start reset")
+        logger.info("Found %s -- start reset", folder_path)
         clean(folder_path)
-        logger.info(f"Cleared {folder_path}")
+        logger.info("Cleared %s", folder_path)
     os.makedirs(folder_path)
-    logger.info(f"Created new folder {folder_path}")
+    logger.info("Created new folder %s", folder_path)
 
 
 def make_tmp_dirs(work_dir):
@@ -338,10 +337,10 @@ def custom_s2c_dem(dem_type, tile_id):
     s2c_docker_dem_folder = f"/root/sen2cor/2.9/dem/{dem_type}"
     if os.path.exists(s2c_docker_dem_folder):
         clean(s2c_docker_dem_folder)
-        logger.info(f"/root/sen2cor/2.9/dem/{dem_type} --> clean (deleted)")
+        logger.info("/root/sen2cor/2.9/dem/%s --> clean (deleted)", dem_type)
     # Create (back) the dem folder
     os.makedirs(s2c_docker_dem_folder)
-    logger.info(f"/root/sen2cor/2.9/dem/{dem_type} --> created")
+    logger.info("/root/sen2cor/2.9/dem/%s --> created", dem_type)
     # Download the dem files
     if dem_type=="srtm":
         get_dem_data(tile_id, Path(dem_tmp_dir), dem_source="ewoc", dem_type=dem_type, dem_resolution="3s")
@@ -360,7 +359,7 @@ def custom_s2c_dem(dem_type, tile_id):
         src = rasterio.open(raster_name)
         sources.append(src)
     merge(sources, dst_path=output_fn, method="max")
-    logger.info(f"Created mosaic {output_fn}")
+    logger.info("Created mosaic %s", output_fn)
     for src in sources:
         src.close()
     links = []
@@ -368,11 +367,11 @@ def custom_s2c_dem(dem_type, tile_id):
     # Artificially change copdem filenames to srtm filenames to run sen2cor 2.9 with copdem
     if dem_type == 'copdem':
         raster_list = get_srtm3s_ids(tile_id)
-    
+
     for raster_name in raster_list:
         try:
             if dem_type=="copdem":
-                raster_name = raster_name + '.tif' 
+                raster_name = raster_name + '.tif'
 		# raster_name = os.path.basename(raster_name).replace("_COG_", "_")
             if dem_type=='srtm':
                 raster_name = os.path.basename(raster_name)
@@ -392,9 +391,9 @@ def unlink(links):
     for symlink in links:
         try:
             os.unlink(symlink)
-            logger.info(f" -- [Ok] Unlinked {symlink}")
+            logger.info(" -- [Ok] Unlinked %s", symlink)
         except FileNotFoundError:
-            logger.info(f"Cannot unlink {symlink}")
+            logger.info("Cannot unlink %s", symlink)
 
 
 def edit_xml_config_file(dem_type):
@@ -402,7 +401,7 @@ def edit_xml_config_file(dem_type):
     Edit xml config file depending on DEM used
     :param dem_type: DEM type
     """
-    s2c_docker_cfg_file = f"/root/sen2cor/2.9/cfg/L2A_GIPP.xml"
+    s2c_docker_cfg_file = "/root/sen2cor/2.9/cfg/L2A_GIPP.xml"
     tree = ET.parse(s2c_docker_cfg_file)
     root = tree.getroot()
     for name in root.iter('DEM_Directory'):
@@ -414,5 +413,5 @@ def edit_xml_config_file(dem_type):
             name.text = 'NONE'
         else:
             raise AttributeError("Attribute dem_type must be srtm or copdem")
-    tree.write(s2c_docker_cfg_file, encoding='utf-8', xml_declaration=True) 
-    logger.info(f"{s2c_docker_cfg_file} --> edited with DEM infos")
+    tree.write(s2c_docker_cfg_file, encoding='utf-8', xml_declaration=True)
+    logger.info("%s --> edited with DEM infos", s2c_docker_cfg_file)
