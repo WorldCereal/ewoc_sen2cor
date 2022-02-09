@@ -308,17 +308,17 @@ def clean(folder: Path):
     shutil.rmtree(folder)
 
 
-def last_safe(safe_folder: Path)->Path:
+def last_safe(safe_folder):
     """
     Get the deepest/last SAFE folder when there are many
     :param safe_folder: path to .SAFE folder
     :return: last path
     """
     tmp = safe_folder
-    for root, dirs, _ in walk(safe_folder):
+    for root, dirs, _ in os.walk(safe_folder):
         for dir_ in dirs:
             if dir_.endswith("SAFE"):
-                tmp = root / dir
+                tmp = os.path.join(root, dir_)
     return tmp
 
 

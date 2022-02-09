@@ -167,10 +167,10 @@ def run_id(pid: str, production_id: str, data_source: str, only_scl: bool = Fals
         # Get Sat product by id using ewoc_dag
         if data_source == "aws":
             l1c_safe_folder = get_s2_product(
-                pid, l2a_dir, source=data_source, aws_l1c_safe=True
+                pid, out_dir_l1c, source=data_source, aws_l1c_safe=True
             )
         else:
-            l1c_safe_folder = get_s2_product(pid, l2a_dir, source=data_source)
+            l1c_safe_folder = get_s2_product(pid, out_dir_l1c, source=data_source)
         # Run sen2cor in subprocess
         l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a, only_scl)
         # Convert the sen2cor output to ewoc ard format
