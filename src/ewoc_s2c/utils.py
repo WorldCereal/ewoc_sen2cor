@@ -8,7 +8,7 @@ import subprocess
 import sys
 from contextlib import ContextDecorator
 from pathlib import Path
-from typing import List, Optional, Tuple 
+from typing import List, Tuple
 
 import boto3.exceptions
 import numpy as np
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 TIMEOUT_SECONDS = 900
 
 
-def binary_scl(scl_file: Path, raster_fn: Path):
+def binary_scl(scl_file: Path, raster_fn: Path)->None:
     """
     Convert L2A SCL file to binary cloud mask
     :param scl_file: Path to SCL file
@@ -67,7 +67,7 @@ def binary_scl(scl_file: Path, raster_fn: Path):
         out.write(mask.astype(rasterio.uint8), 1)
 
 
-def scl_to_ard(work_dir: Path, prod_name: str):
+def scl_to_ard(work_dir: Path, prod_name: str)->None:
     """
     Convert the SCL L2A product into EWoC ARD format
     :param work_dir: Output directory
@@ -99,7 +99,7 @@ def scl_to_ard(work_dir: Path, prod_name: str):
         logger.info("Clean")
 
 
-def l2a_to_ard(l2a_folder: Path, work_dir: Path, only_scl: bool = False)-> Path:
+def l2a_to_ard(l2a_folder: Path, work_dir: Path, only_scl: bool = False)->Path:
     """
     Convert an L2A product into EWoC ARD format
     :param l2a_folder: L2A SAFE folder
@@ -145,14 +145,14 @@ def l2a_to_ard(l2a_folder: Path, work_dir: Path, only_scl: bool = False)-> Path:
         band_path = find_l2a_band(l2a_folder, band, bands[band])
         band_name = band_path.parts[-1]
         band_name = band_name.replace(".jp2", ".tif").replace(f"_{str(res)}m", "")
-        logger.info("Processing band " + band_name)
+        logger.info("Processing band %s", band_name)
         out_name = f"{platform}_{atcor_algo}_{date}_{unique_id}_{tile_id}_{band}.tif"
         raster_fn = folder_st / dir_name / out_name
         if band == "SCL":
             out_cld = f"{platform}_{atcor_algo}_{date}_{unique_id}_{tile_id}_MASK.tif"
             raster_cld = folder_st / dir_name / out_cld
             binary_scl(band_path, raster_cld)
-            logger.info("Done --> " + str(raster_cld))
+            logger.info("Done --> %s", str(raster_cld))
             try:
                 (raster_cld.with_suffix('.aux.xml')).unlink()
             except FileNotFoundError:
@@ -160,7 +160,7 @@ def l2a_to_ard(l2a_folder: Path, work_dir: Path, only_scl: bool = False)-> Path:
 
         else:
             raster_to_ard(band_path, band, raster_fn)
-            logger.info("Done --> " + str(raster_fn))
+            logger.info("Done --> %s", str(raster_fn))
     return ard_folder
 
 def get_s2_prodname(safe_path: Path)->str:
@@ -177,7 +177,7 @@ def get_s2_prodname(safe_path: Path)->str:
     return prodname
 
 
-def raster_to_ard(raster_path: Path, band_num: str, raster_fn: Path):
+def raster_to_ard(raster_path: Path, band_num: str, raster_fn: Path)->None:
     """
     Read raster and update internals to fit ewoc ard specs
     :param raster_path: Path to raster file
@@ -220,14 +220,14 @@ def find_l2a_band(l2a_folder: Path, band_num: str, res: int)->Path:
     :return: path to band
     """
     # band_path = None
-    id = f"{band_num}_{str(res)}m.jp2"
+    id_img = f"{band_num}_{str(res)}m.jp2"
     for file in walk(l2a_folder):
-        if str(file).endswith(id):
+        if str(file).endswith(id_img):
             band_path = file
     return band_path
 
 
-def set_logger(verbose_v: str):
+def set_logger(verbose_v: str)->None:
     """
     Set the logger level
     :param loglevel:
@@ -299,7 +299,7 @@ def run_s2c(
     return l2a_safe_folder
 
 
-def clean(folder: Path):
+def clean(folder: Path)->None:
     """
     Delete folder recursively
     :param folder: Path to folder to be deleted
@@ -308,7 +308,7 @@ def clean(folder: Path):
     shutil.rmtree(folder)
 
 
-def last_safe(safe_folder):
+def last_safe(safe_folder)->str:
     """
     Get the deepest/last SAFE folder when there are many
     :param safe_folder: path to .SAFE folder
@@ -322,7 +322,7 @@ def last_safe(safe_folder):
     return tmp
 
 
-def ewoc_s3_upload(local_path: Path, ard_prd_prefix: str):
+def ewoc_s3_upload(local_path: Path, ard_prd_prefix: str)->None:
     """
     Upload file to the Cloud (S3 bucket)
     :param local_path: Path to the file to be uploaded
@@ -338,26 +338,26 @@ def ewoc_s3_upload(local_path: Path, ard_prd_prefix: str):
         s3_bucket.upload_ard_prd(local_path, ard_prd_prefix)
         # <!> Delete output folder after upload
         clean(local_path)
-        logger.info(f"{local_path} cleared")
+        logger.info("%s cleared", local_path)
     except boto3.exceptions.S3UploadFailedError:
         logger.info("Could not upload output folder to s3, results saved locally")
 
 
-def init_folder(folder_path: Path):
+def init_folder(folder_path: Path)->None:
     """
     Create some work folders, delete if existing
     :param folder_path: Path to folders location
     :return: None
     """
     if folder_path.is_dir():
-        logger.info(f"Found {folder_path} -- start reset")
+        logger.info("Found %s -- start reset", folder_path)
         clean(folder_path)
-        logger.info(f"Cleared {folder_path}")
+        logger.info("Cleared %s", folder_path)
         folder_path.mkdir(exist_ok=False, parents=True)
-        logger.info(f"Created new folder {folder_path}")
+        logger.info("Created new folder %s", folder_path)
     else:
         folder_path.mkdir(exist_ok=False, parents=True)
-        logger.info(f"Created new folder {folder_path}")
+        logger.info("Created new folder %s", folder_path)
 
 
 def make_tmp_dirs(work_dir: Path)->Tuple[Path, Path]:
@@ -402,7 +402,7 @@ def custom_s2c_dem(tile_id: str, tmp_dir: Path)->List:
         src = rasterio.open(raster_name)
         sources.append(src)
     merge(sources, dst_path=output_fn, method="max")
-    logger.info(f"Created mosaic {output_fn}")
+    logger.info("Created mosaic %s", output_fn)
     for src in sources:
         src.close()
     links = []
@@ -415,7 +415,7 @@ def custom_s2c_dem(tile_id: str, tmp_dir: Path)->List:
     return links
 
 
-def unlink(links: List):
+def unlink(links: List)->None:
     """
     Remove symlinks created
     :param links: List of links
@@ -424,27 +424,32 @@ def unlink(links: List):
     for symlink in links:
         try:
             symlink.unlink()
-            logger.info(f" -- [Ok] Unlinked {symlink}")
+            logger.info(" -- [Ok] Unlinked %s", symlink)
         except FileNotFoundError:
-            logger.info(f"Cannot unlink {symlink}")
+            logger.info("Cannot unlink %s", symlink)
 
 
-def walk(path: Path): 
-    for p in path.iterdir(): 
-        if p.is_dir(): 
-            yield from walk(p)
+def walk(path: Path)->None:
+    for cur_path in path.iterdir():
+        if cur_path.is_dir():
+            yield from walk(cur_path)
             continue
-        yield p.resolve()
+        yield cur_path.resolve()
 
 
-def execute_cmd(cmd: str):
+def execute_cmd(cmd: str)->None:
     """
     Execute the given cmd.
     :param cmd: The command and its parameters to execute
     """
     logger.debug("Launching command: %s", cmd)
     try:
-        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    except OSError as err:
-        logger.error('An error occurred while running command \'%s\'', cmd, exc_info=True)
-        return err.errno, str(err), err.strerror 
+        subprocess.run(cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True,
+            check=True)
+    except subprocess.CalledProcessError as err:
+        logger.error('Following error code %s \
+            occurred while running command %s with following output:\
+            %s / %s', err.returncode, err.cmd, err.stdout, err.stderr)

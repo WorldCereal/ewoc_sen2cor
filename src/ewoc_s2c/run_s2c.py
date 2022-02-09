@@ -54,10 +54,10 @@ def cli(verbose):
 @click.option("-ds", "--data_source", default="creodias")
 @click.option("-sc", "--only_scl", default=False, is_flag=True)
 @click.option("--no_sen2cor", help="Do not process with Sen2cor", is_flag=True)
-def run_plan(plan: str, production_id: str, data_source: str, only_scl: bool, no_sen2cor: bool):
+def run_plan(plan: str, production_id: str, data_source: str, only_scl: bool, no_sen2cor: bool)->None:
     l2a_dir = Path("/work/SEN2TEST/OUT/")
     l2a_dir.mkdir(exist_ok=True, parents=True)
-    with open(plan) as file_plan:
+    with open(plan, encoding="utf-8") as file_plan:
         plan_new = json.load(file_plan)
     tiles = plan_new["tiles"]
     for tile in tiles:
@@ -110,12 +110,12 @@ def run_plan(plan: str, production_id: str, data_source: str, only_scl: bool, no
                     ewoc_s3_upload(Path(upload_dir), production_id)
                 count = +1
             except RuntimeError:
-                logger.info(f"Something went wrong with {pid}")
+                logger.info("Something went wrong with %s", pid)
         clean(dem_tmp_dir)
         unlink(dem_syms)
         number_of_products = len(prods)
         logger.info("\n\nEnd of processing ")
-        logger.info(f"Processed {str(count)} of {str(number_of_products)}")
+        logger.info("Processed %s of %s", str(count), str(number_of_products))
 
 
 @cli.command("s2c_id", help="Sen2cor for on product using EOdag ID")
@@ -128,7 +128,7 @@ def run_plan(plan: str, production_id: str, data_source: str, only_scl: bool, no
 @click.option("-ds", "--data_source", default="creodias")
 @click.option("-sc", "--only_scl", default=False, is_flag=True)
 @click.option("--no_sen2cor", help="Do not process with Sen2cor", is_flag=True)
-def run_id(pid: str, production_id: str, data_source: str, only_scl: bool = False, no_sen2cor: bool = False):
+def run_id(pid: str, production_id: str, data_source: str, only_scl: bool = False, no_sen2cor: bool = False)->None:
     """
     Run Sen2Cor with a product ID
     :param pid: Sentinel-2 product identifier
@@ -196,7 +196,7 @@ def run_id(pid: str, production_id: str, data_source: str, only_scl: bool = Fals
     default="0000",
     help="Production ID that will be used to upload to s3 bucket. " "Default: 0000",
 )
-def run_db(executor, status_filter, production_id):
+def run_db(executor, status_filter, production_id)->None:
     l2a_dir = Path("/work/SEN2TEST/OUT/")
     # Generate temporary folders
     dem_tmp_dir = Path("/work/SEN2TEST/DEM/")
@@ -210,7 +210,7 @@ def run_db(executor, status_filter, production_id):
     custom_s2c_dem(s2tile, tmp_dir=dem_tmp_dir)
     bucket = CreodiasBucket()
     bucket.download_s2_prd(pid, Path(out_dir_l1c))
-    logger.info(f"Download done for {pid}\n")
+    logger.info("Download done for %s\n", pid)
     # Make sure to get the right path to the SAFE folder!
     # TODO make this list comprehension more robust using regex
     l1c_safe_folder = [
