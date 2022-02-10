@@ -5,11 +5,13 @@ import os
 import shutil
 import signal
 import sys
+import uuid
 from contextlib import ContextDecorator
 from pathlib import Path
-import uuid
+from typing import Tuple
 
 import boto3.exceptions
+import lxml.etree as ET
 import numpy as np
 import rasterio
 from ewoc_dag.bucket.ewoc import EWOCARDBucket
@@ -17,7 +19,6 @@ from ewoc_dag.cli_dem import get_dem_data
 from ewoc_dag.srtm_dag import get_srtm3s_ids
 from ewoc_dag.utils import find_l2a_band, get_s2_prodname, raster_to_ard
 from rasterio.merge import merge
-import lxml.etree as ET
 
 logger = logging.getLogger(__name__)
 
@@ -293,28 +294,31 @@ def ewoc_s3_upload(local_path, ard_prd_prefix):
         logger.info("Could not upload output folder to s3, results saved locally")
 
 
-def init_folder(folder_path):
+def init_folder(folder_path: Path) -> None:
     """
     Create some work folders, delete if existing
     :param folder_path: Path to folders location
     :return: None
     """
-    if os.path.exists(folder_path):
+    if folder_path.is_dir():
         logger.info("Found %s -- start reset", folder_path)
         clean(folder_path)
         logger.info("Cleared %s", folder_path)
-    os.makedirs(folder_path)
-    logger.info("Created new folder %s", folder_path)
+        folder_path.mkdir(exist_ok=False, parents=True)
+        logger.info("Created new folder %s", folder_path)
+    else:
+        folder_path.mkdir(exist_ok=False, parents=True)
+        logger.info("Created new folder %s", folder_path)
 
 
-def make_tmp_dirs(work_dir):
+def make_tmp_dirs(work_dir: Path) -> Tuple[Path, Path]:
     """
     Crearte folders
     :param work_dir: folders location
     :return: None
     """
-    out_dir_in = os.path.join(work_dir, "tmp_in")
-    out_dir_proc = os.path.join(work_dir, "tmp_proc")
+    out_dir_in = work_dir / "tmp_in"
+    out_dir_proc = work_dir / "tmp_proc"
     init_folder(out_dir_in)
     init_folder(out_dir_proc)
     return out_dir_in, out_dir_proc
@@ -342,18 +346,30 @@ def custom_s2c_dem(dem_type, tile_id):
     os.makedirs(s2c_docker_dem_folder)
     logger.info("/root/sen2cor/2.9/dem/%s --> created", dem_type)
     # Download the dem files
-    if dem_type=="srtm":
-        get_dem_data(tile_id, Path(dem_tmp_dir), dem_source="ewoc", dem_type=dem_type, dem_resolution="3s")
+    if dem_type == "srtm":
+        get_dem_data(
+            tile_id,
+            Path(dem_tmp_dir),
+            dem_source="ewoc",
+            dem_type=dem_type,
+            dem_resolution="3s",
+        )
         raster_list = glob.glob(os.path.join(dem_tmp_dir, "srtm3s", "*.tif"))
-    elif dem_type=="copdem":
-        get_dem_data(tile_id, Path(dem_tmp_dir), dem_source="aws", dem_type=dem_type, dem_resolution="3s")
+    elif dem_type == "copdem":
+        get_dem_data(
+            tile_id,
+            Path(dem_tmp_dir),
+            dem_source="aws",
+            dem_type=dem_type,
+            dem_resolution="3s",
+        )
         raster_list = glob.glob(os.path.join(dem_tmp_dir, "*.tif"))
     else:
         raise AttributeError("Attribute dem_type must be srtm or copdem")
 
     sources = []
     uid = uuid.uuid4()
-    output_fn = os.path.join(dem_tmp_dir, f'mosaic_{uid}.tif')
+    output_fn = os.path.join(dem_tmp_dir, f"mosaic_{uid}.tif")
 
     for raster_name in raster_list:
         src = rasterio.open(raster_name)
@@ -364,16 +380,17 @@ def custom_s2c_dem(dem_type, tile_id):
         src.close()
     links = []
 
-    # Artificially change copdem filenames to srtm filenames to run sen2cor 2.9 with copdem
-    if dem_type == 'copdem':
+    # Artificially change copdem filenames to srtm filenames
+    # to run sen2cor 2.9 with copdem
+    if dem_type == "copdem":
         raster_list = get_srtm3s_ids(tile_id)
 
     for raster_name in raster_list:
         try:
-            if dem_type=="copdem":
-                raster_name = raster_name + '.tif'
-		# raster_name = os.path.basename(raster_name).replace("_COG_", "_")
-            if dem_type=='srtm':
+            if dem_type == "copdem":
+                raster_name = raster_name + ".tif"
+            # raster_name = os.path.basename(raster_name).replace("_COG_", "_")
+            if dem_type == "srtm":
                 raster_name = os.path.basename(raster_name)
             os.symlink(output_fn, os.path.join(s2c_docker_dem_folder, raster_name))
             links.append(os.path.join(s2c_docker_dem_folder, raster_name))
@@ -404,14 +421,16 @@ def edit_xml_config_file(dem_type):
     s2c_docker_cfg_file = "/root/sen2cor/2.9/cfg/L2A_GIPP.xml"
     tree = ET.parse(s2c_docker_cfg_file)
     root = tree.getroot()
-    for name in root.iter('DEM_Directory'):
-        name.text = f'dem/{dem_type}'
-    for name in root.iter('DEM_Reference'):
-        if dem_type == 'srtm':
-            name.text = 'http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF/'
-        elif dem_type == 'copdem':
-            name.text = 'NONE'
+    for name in root.iter("DEM_Directory"):
+        name.text = f"dem/{dem_type}"
+    for name in root.iter("DEM_Reference"):
+        if dem_type == "srtm":
+            name.text = (
+                "http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF/"
+            )
+        elif dem_type == "copdem":
+            name.text = "NONE"
         else:
             raise AttributeError("Attribute dem_type must be srtm or copdem")
-    tree.write(s2c_docker_cfg_file, encoding='utf-8', xml_declaration=True)
+    tree.write(s2c_docker_cfg_file, encoding="utf-8", xml_declaration=True)
     logger.info("%s --> edited with DEM infos", s2c_docker_cfg_file)
