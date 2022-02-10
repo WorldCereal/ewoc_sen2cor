@@ -21,6 +21,7 @@ from ewoc_s2c.utils import (
     run_s2c,
     set_logger,
     unlink,
+    edit_xml_config_file,
 )
 
 logger = logging.getLogger(__name__)
@@ -76,9 +77,7 @@ def run_plan(
         plan_new = json.load(file_plan)
     tiles = plan_new["tiles"]
     for tile in tiles:
-        dem_tmp_dir = Path("/work/SEN2TEST/DEM/")
-        dem_tmp_dir.mkdir(exist_ok=True, parents=True)
-        dem_syms = custom_s2c_dem(tile["tile_id"], tmp_dir=dem_tmp_dir)
+        dem_tmp_dir, dem_syms = custom_s2c_dem(dem_type, tile["tile_id"])
         count = 0
         prods = tile["s2_ids"]
         # Flatten list of s2 products
@@ -141,6 +140,7 @@ def run_plan(
     help="Production ID that will be used to upload to s3 bucket. " "Default: 0000",
 )
 @click.option("-ds", "--data_source", default="creodias")
+@click.option("-dem", "--dem_type", default="srtm", help="DEM that will be used in the process")
 @click.option("-sc", "--only_scl", default=False, is_flag=True)
 @click.option("--no_sen2cor", help="Do not process with Sen2cor", is_flag=True)
 def run_id(
@@ -154,13 +154,18 @@ def run_id(
     :param pid: Sentinel-2 product identifier
     :param l2a_dir: Output folder
     :param production_id: Special identifier
+    :param data_source: Sentinel-2 product data source
+    :param dem_type: DEM type
     :param only_scl: True to process scl only
     :param no_sen2cor: Download directly, no local atmospheric correction
     :return: None
     """
 
     l2a_dir = Path("/work/SEN2TEST/OUT/")
-    l2a_dir.mkdir(exist_ok=True, parents=True)
+    if os.path.exists(l2a_dir):
+        clean(l2a_dir)
+        logger.info("Cleared %s", l2a_dir)
+    l2a_dir.mkdir(exist_ok=False, parents=True)
     upload_dir = l2a_dir / "upload"
     upload_dir.mkdir(exist_ok=True, parents=True)
     if not pid.endswith(".SAFE"):
@@ -178,11 +183,11 @@ def run_id(
         else:
             raise NotImplementedError("Only the SCL MASK production is implemented")
     else:
-        # Generate temporary folders
-        dem_tmp_dir = Path("/work/SEN2TEST/DEM/")
-        dem_tmp_dir.mkdir(exist_ok=True, parents=True)
+        # Edit config file
+        edit_xml_config_file(dem_type)
+        # Download and create a DEM mosaic
         tile = pid.split("_")[5][1:]
-        dem_syms = custom_s2c_dem(tile, tmp_dir=dem_tmp_dir)
+        dem_tmp_dir, dem_syms = custom_s2c_dem(dem_type, tile)
         out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
         # Get Sat product by id using ewoc_dag
         if data_source == "aws":
@@ -237,7 +242,7 @@ def run_db(
     tile, _ = get_next_tile(db_type, executor, status_filter)
     pid = tile.products
     s2tile = pid.split("_")[5][1:]
-    custom_s2c_dem(s2tile, tmp_dir=dem_tmp_dir)
+    custom_s2c_dem(dem_type, s2tile)
     bucket = CreodiasBucket()
     bucket.download_s2_prd(pid, Path(out_dir_l1c))
     logger.info("Download done for %s\n", pid)
