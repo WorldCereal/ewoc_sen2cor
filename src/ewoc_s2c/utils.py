@@ -354,8 +354,13 @@ def ewoc_s3_upload(local_path: Path, ard_prd_prefix: str) -> None:
         # you'll need to define some env vars needed for the s3 client
         # and destination path
         s3_bucket = EWOCARDBucket()
-
-        s3_bucket.upload_ard_prd(local_path, ard_prd_prefix)
+        n_files, _ = s3_bucket.upload_ard_prd(local_path, ard_prd_prefix)
+        upload_folder = get_last_folder(local_path)
+        upload_location = (
+            f"s3://{s3_bucket.bucket_name}/{ard_prd_prefix}{upload_folder}"
+        )
+        # This print is made on purpose (not debug) :)
+        print(f"Uploaded {n_files} tif files to bucket | {upload_location}")
         # <!> Delete output folder after upload
         clean(local_path)
         logger.info("%s cleared", local_path)
@@ -536,3 +541,27 @@ def execute_cmd(cmd: str) -> None:
             err.stdout,
             err.stderr,
         )
+
+
+def get_last_folder(folder_path: Path) -> Path:
+    """
+    Get the upload folder
+    :param folder_path: upload folder
+    :return: Path
+    """
+    suffix = "*.tif"
+    list_files = list(folder_path.rglob(suffix))
+    parent_list = []
+    for el in list_files:
+        parent_list.append(el.parent)
+    # Remove duplicates
+    parent_list = list(set(parent_list))
+    if len(parent_list) == 1:
+        parent_folder = str(parent_list[0])
+        root_folder = str(folder_path)
+        return parent_folder.replace(root_folder, "")
+    else:
+        logger.warning("Found multiple nested folders, something is wrong")
+        parent_folder = str(parent_list[0])
+        root_folder = str(folder_path)
+        return parent_folder.replace(root_folder, "")
