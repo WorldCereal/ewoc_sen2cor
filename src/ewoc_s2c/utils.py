@@ -461,7 +461,7 @@ def custom_s2c_dem(dem_type: str, tile_id: str) -> Tuple[Path, List]:
             if dem_type == "srtm":
                 raster_name = os.path.basename(raster_name)
             os.symlink(output_fn, os.path.join(s2c_docker_dem_folder, raster_name))
-            links.append(os.path.join(s2c_docker_dem_folder, raster_name))
+            links.append(Path(os.path.join(s2c_docker_dem_folder, raster_name)))
         except OSError:
             logger.info("Symlink error: probably already exists")
     return dem_tmp_dir, links
