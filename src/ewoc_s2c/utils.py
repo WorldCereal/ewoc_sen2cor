@@ -83,7 +83,8 @@ def scl_to_ard(work_dir: Path, prod_name: str)->None:
     tile_id = product_id.split("_")[5][1:]
     atcor_algo = "L2A"
     unique_id = "".join(product_id.split("_")[3:6])
-    folder_st = work_dir / "OPTICAL" / tile_id[:2] / tile_id[2] / tile_id[3:] / year / date.split("T")[0]
+    folder_st = work_dir / "OPTICAL" / tile_id[:2] / \
+        tile_id[2] / tile_id[3:] / year / date.split("T")[0]
     dir_name = f"{platform}_{processing_level}_{date}_{unique_id}_{tile_id}"
     tmp_dir = folder_st / dir_name
     tmp_dir.mkdir(exist_ok=False, parents=True)
@@ -133,7 +134,8 @@ def l2a_to_ard(l2a_folder: Path, work_dir: Path, only_scl: bool = False)->Path:
     tile_id = product_id.split("_")[5][1:]
     atcor_algo = "L2A"
     unique_id = "".join(product_id.split("_")[3:6])
-    folder_st = work_dir / "OPTICAL" / tile_id[:2] / tile_id[2] / tile_id[3:] / year / date.split("T")[0]
+    folder_st = work_dir / "OPTICAL" / tile_id[:2] / \
+        tile_id[2] / tile_id[3:] / year / date.split("T")[0]
     dir_name = f"{platform}_{processing_level}_{date}_{unique_id}_{tile_id}"
     tmp_dir = folder_st / dir_name
     ard_folder = folder_st / dir_name
@@ -430,6 +432,10 @@ def unlink(links: List)->None:
 
 
 def walk(path: Path)->None:
+    """
+    Recursively traverse all files from a directory.
+    :param path: Directory path
+    """
     for cur_path in path.iterdir():
         if cur_path.is_dir():
             yield from walk(cur_path)
