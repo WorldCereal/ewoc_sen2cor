@@ -20,7 +20,6 @@ import rasterio
 from ewoc_dag.bucket.ewoc import EWOCARDBucket
 from ewoc_dag.cli_dem import get_dem_data
 from ewoc_dag.srtm_dag import get_srtm3s_ids
-from ewoc_dag.utils import find_l2a_band, get_s2_prodname, raster_to_ard
 from rasterio.merge import merge
 
 from ewoc_s2c import __version__
@@ -394,12 +393,11 @@ def make_tmp_dirs(work_dir: Path) -> Tuple[Path, Path]:
     return out_dir_in, out_dir_proc
 
 
-def custom_s2c_dem(dem_type, tile_id):
+def custom_s2c_dem(dem_type: str, tile_id: str) -> Tuple[Path, List]:
     """
     Download and create a DEM mosaïc
     :param dem_type: DEM type (srtm or copdem)
     :param tile_id: MGRS tile id (ex 31TCJ Toulouse)
-    :param tmp_dir: Output directory
     :return: DEM temporary directory and list of links to the downloaded DEM files
     """
     # Generate temporary folder
@@ -538,4 +536,3 @@ def execute_cmd(cmd: str) -> None:
             err.stdout,
             err.stderr,
         )
-
