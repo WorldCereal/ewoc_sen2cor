@@ -55,15 +55,27 @@ def cli(verbose):
 @click.option("-ds", "--data_source", default="creodias")
 @click.option("-sc", "--only_scl", default=False, is_flag=True)
 @click.option("--no_sen2cor", help="Do not process with Sen2cor", is_flag=True)
-def run_plan(plan, production_id, data_source, dem_type, only_scl, no_sen2cor):
+def run_plan(
+    plan: str,
+    production_id: str,
+    data_source: str,
+    only_scl: bool,
+    no_sen2cor: bool)->None:
+    """
+    Run Sen2Cor with a json plan
+    :param plan: WorkPlan in json format
+    :param production_id: Special identifier
+    :param data_source: Sentinel-2 data source
+    :param only_scl: True to process scl only, default to False
+    :param no_sen2cor: If True, download directly, no local atmospheric correction
+    :return: None
+    """
+
     l2a_dir = Path("/work/SEN2TEST/OUT/")
-    if os.path.exists(l2a_dir):
-        clean(l2a_dir)
-        logger.info("Cleared %s", l2a_dir)
-    l2a_dir.mkdir(exist_ok=False, parents=True)
+    l2a_dir.mkdir(exist_ok=True, parents=True)
     with open(plan, encoding="utf-8") as file_plan:
-        plan = json.load(file_plan)
-    tiles = plan["tiles"]
+        plan_new = json.load(file_plan)
+    tiles = plan_new["tiles"]
     for tile in tiles:
         dem_tmp_dir, dem_syms = custom_s2c_dem(dem_type, tile["tile_id"])
         count = 0
@@ -131,7 +143,12 @@ def run_plan(plan, production_id, data_source, dem_type, only_scl, no_sen2cor):
 @click.option("-dem", "--dem_type", default="srtm", help="DEM that will be used in the process")
 @click.option("-sc", "--only_scl", default=False, is_flag=True)
 @click.option("--no_sen2cor", help="Do not process with Sen2cor", is_flag=True)
-def run_id(pid, production_id, data_source, dem_type, only_scl=False, no_sen2cor=False):
+def run_id(
+    pid: str,
+    production_id: str,
+    data_source: str,
+    only_scl: bool = False,
+    no_sen2cor: bool = False)->None:
     """
     Run Sen2Cor with a product ID
     :param pid: Sentinel-2 product identifier
@@ -162,7 +179,7 @@ def run_id(pid, production_id, data_source, dem_type, only_scl=False, no_sen2cor
                 pid, l2a_dir, source=data_source, l2_mask_only=True
             )
             l2a_to_ard(scl_folder, l2a_dir, only_scl)
-            ewoc_s3_upload(Path(upload_dir), production_id)
+            ewoc_s3_upload(upload_dir, production_id)
         else:
             raise NotImplementedError("Only the SCL MASK production is implemented")
     else:
@@ -188,7 +205,7 @@ def run_id(pid, production_id, data_source, dem_type, only_scl=False, no_sen2cor
         clean(dem_tmp_dir)
         unlink(dem_syms)
         # Send to s3
-        ewoc_s3_upload(Path(upload_dir), production_id)
+        ewoc_s3_upload(upload_dir, production_id)
 
 
 @cli.command("s2c_db", help="Sen2cor Postgreqsl mode")
@@ -204,8 +221,21 @@ def run_id(pid, production_id, data_source, dem_type, only_scl=False, no_sen2cor
     default="0000",
     help="Production ID that will be used to upload to s3 bucket. " "Default: 0000",
 )
-def run_db(executor, status_filter, production_id, dem_type):
-    l2a_dir = "/work/SEN2TEST/OUT/"
+def run_db(
+    executor,
+    status_filter,
+    production_id)->None:
+    """
+    Run Sen2Cor with a PostgreSQL database
+    :param executor:
+    :param status_filter:
+    :param production_id: Special identifier
+    :return: None
+    """
+    l2a_dir = Path("/work/SEN2TEST/OUT/")
+    # Generate temporary folders
+    dem_tmp_dir = Path("/work/SEN2TEST/DEM/")
+    dem_tmp_dir.mkdir(exist_ok=False, parents=True)
     out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
     # Get Sat product by id using eodag
     db_type = "fsmac"
@@ -219,7 +249,7 @@ def run_db(executor, status_filter, production_id, dem_type):
     # Make sure to get the right path to the SAFE folder!
     # TODO make this list comprehension more robust using regex
     l1c_safe_folder = [
-        os.path.join(out_dir_l1c, fold)
+        out_dir_l1c / fold
         for fold in os.listdir(out_dir_l1c)
         if fold.endswith("SAFE")
     ][0]
