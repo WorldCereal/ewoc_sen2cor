@@ -14,6 +14,7 @@ from ewoc_db.fill.update_status import get_next_tile
 from ewoc_s2c.utils import (
     clean,
     custom_s2c_dem,
+    edit_xml_config_file,
     ewoc_s3_upload,
     l2a_to_ard,
     last_safe,
@@ -21,7 +22,6 @@ from ewoc_s2c.utils import (
     run_s2c,
     set_logger,
     unlink,
-    edit_xml_config_file,
 )
 
 logger = logging.getLogger(__name__)
@@ -53,14 +53,19 @@ def cli(verbose):
     help="Production ID that will be used to upload to s3 bucket. " "Default: 0000",
 )
 @click.option("-ds", "--data_source", default="creodias")
+@click.option(
+    "-dem", "--dem_type", default="srtm", help="DEM that will be used in the process"
+)
 @click.option("-sc", "--only_scl", default=False, is_flag=True)
 @click.option("--no_sen2cor", help="Do not process with Sen2cor", is_flag=True)
 def run_plan(
     plan: str,
     production_id: str,
     data_source: str,
+    dem_type: str,
     only_scl: bool,
-    no_sen2cor: bool)->None:
+    no_sen2cor: bool,
+) -> None:
     """
     Run Sen2Cor with a json plan
     :param plan: WorkPlan in json format
@@ -140,15 +145,19 @@ def run_plan(
     help="Production ID that will be used to upload to s3 bucket. " "Default: 0000",
 )
 @click.option("-ds", "--data_source", default="creodias")
-@click.option("-dem", "--dem_type", default="srtm", help="DEM that will be used in the process")
+@click.option(
+    "-dem", "--dem_type", default="srtm", help="DEM that will be used in the process"
+)
 @click.option("-sc", "--only_scl", default=False, is_flag=True)
 @click.option("--no_sen2cor", help="Do not process with Sen2cor", is_flag=True)
 def run_id(
     pid: str,
     production_id: str,
     data_source: str,
+    dem_type: str,
     only_scl: bool = False,
-    no_sen2cor: bool = False)->None:
+    no_sen2cor: bool = False,
+) -> None:
     """
     Run Sen2Cor with a product ID
     :param pid: Sentinel-2 product identifier
@@ -217,18 +226,19 @@ def run_id(
     help="Selects tiles that follow that condition",
 )
 @click.option(
+    "-dem", "--dem_type", default="srtm", help="DEM that will be used in the process"
+)
+@click.option(
     "--production_id",
     default="0000",
     help="Production ID that will be used to upload to s3 bucket. " "Default: 0000",
 )
-def run_db(
-    executor,
-    status_filter,
-    production_id)->None:
+def run_db(executor, status_filter, dem_type, production_id) -> None:
     """
     Run Sen2Cor with a PostgreSQL database
     :param executor:
     :param status_filter:
+    :param dem_type: DEM type
     :param production_id: Special identifier
     :return: None
     """
@@ -249,9 +259,7 @@ def run_db(
     # Make sure to get the right path to the SAFE folder!
     # TODO make this list comprehension more robust using regex
     l1c_safe_folder = [
-        out_dir_l1c / fold
-        for fold in os.listdir(out_dir_l1c)
-        if fold.endswith("SAFE")
+        out_dir_l1c / fold for fold in os.listdir(out_dir_l1c) if fold.endswith("SAFE")
     ][0]
     l1c_safe_folder = last_safe(l1c_safe_folder)
     # Processing time, here sen2cor, could be another processor

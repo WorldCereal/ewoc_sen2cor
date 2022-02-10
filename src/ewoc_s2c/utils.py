@@ -20,7 +20,6 @@ import rasterio
 from ewoc_dag.bucket.ewoc import EWOCARDBucket
 from ewoc_dag.cli_dem import get_dem_data
 from ewoc_dag.srtm_dag import get_srtm3s_ids
-from ewoc_dag.utils import find_l2a_band, get_s2_prodname, raster_to_ard
 from rasterio.merge import merge
 
 from ewoc_s2c import __version__
@@ -355,8 +354,13 @@ def ewoc_s3_upload(local_path: Path, ard_prd_prefix: str) -> None:
         # you'll need to define some env vars needed for the s3 client
         # and destination path
         s3_bucket = EWOCARDBucket()
-
-        s3_bucket.upload_ard_prd(local_path, ard_prd_prefix)
+        n_files, _ = s3_bucket.upload_ard_prd(local_path, ard_prd_prefix)
+        upload_folder = get_last_folder(local_path)
+        upload_location = (
+            f"s3://{s3_bucket.bucket_name}/{ard_prd_prefix}{upload_folder}"
+        )
+        # This print is made on purpose (not debug) :)
+        print(f"Uploaded {n_files} tif files to bucket | {upload_location}")
         # <!> Delete output folder after upload
         clean(local_path)
         logger.info("%s cleared", local_path)
@@ -394,12 +398,11 @@ def make_tmp_dirs(work_dir: Path) -> Tuple[Path, Path]:
     return out_dir_in, out_dir_proc
 
 
-def custom_s2c_dem(dem_type, tile_id):
+def custom_s2c_dem(dem_type: str, tile_id: str) -> Tuple[Path, List]:
     """
     Download and create a DEM mosaïc
     :param dem_type: DEM type (srtm or copdem)
     :param tile_id: MGRS tile id (ex 31TCJ Toulouse)
-    :param tmp_dir: Output directory
     :return: DEM temporary directory and list of links to the downloaded DEM files
     """
     # Generate temporary folder
@@ -463,7 +466,7 @@ def custom_s2c_dem(dem_type, tile_id):
             if dem_type == "srtm":
                 raster_name = os.path.basename(raster_name)
             os.symlink(output_fn, os.path.join(s2c_docker_dem_folder, raster_name))
-            links.append(os.path.join(s2c_docker_dem_folder, raster_name))
+            links.append(Path(os.path.join(s2c_docker_dem_folder, raster_name)))
         except OSError:
             logger.info("Symlink error: probably already exists")
     return dem_tmp_dir, links
@@ -539,3 +542,26 @@ def execute_cmd(cmd: str) -> None:
             err.stderr,
         )
 
+
+def get_last_folder(folder_path: Path) -> Path:
+    """
+    Get the upload folder
+    :param folder_path: upload folder
+    :return: Path
+    """
+    suffix = "*.tif"
+    list_files = list(folder_path.rglob(suffix))
+    parent_list = []
+    for el in list_files:
+        parent_list.append(el.parent)
+    # Remove duplicates
+    parent_list = list(set(parent_list))
+    if len(parent_list) == 1:
+        parent_folder = str(parent_list[0])
+        root_folder = str(folder_path)
+        return parent_folder.replace(root_folder, "")
+    else:
+        logger.warning("Found multiple nested folders, something is wrong")
+        parent_folder = str(parent_list[0])
+        root_folder = str(folder_path)
+        return parent_folder.replace(root_folder, "")
