@@ -528,9 +528,7 @@ def execute_cmd(cmd: str) -> None:
     """
     logger.debug("Launching command: %s", cmd)
     try:
-        subprocess.run(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, check=True
-        )
+        subprocess.run(cmd, shell=True, check=True)
     except subprocess.CalledProcessError as err:
         logger.error(
             "Following error code %s \
