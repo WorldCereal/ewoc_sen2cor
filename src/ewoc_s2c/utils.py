@@ -4,11 +4,9 @@ import glob
 import logging
 import os
 import shutil
-import signal
 import subprocess
 import sys
 import uuid
-from contextlib import ContextDecorator
 from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple
@@ -25,8 +23,6 @@ from rasterio.merge import merge
 from ewoc_s2c import __version__
 
 logger = logging.getLogger(__name__)
-
-TIMEOUT_SECONDS = 900
 
 
 def binary_scl(scl_file: Path, raster_fn: Path) -> None:
@@ -255,39 +251,26 @@ def set_logger(verbose_v: str) -> None:
     :param loglevel:
     :return:
     """
-    v_to_level = {"v": "INFO", "vv": "DEBUG"}
-    loglevel = v_to_level[verbose_v]
     logformat = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
-    logging.basicConfig(
-        level=loglevel, stream=sys.stdout, format=logformat, datefmt="%Y-%m-%d %H:%M:%S"
-    )
-
-
-class TimeoutErrorSg(Exception):
-    """
-    Timeout Exception
-    """
-
-    pass
-
-
-class TimeOut(ContextDecorator):
-    """
-    Time out decorator
-    """
-
-    def __init__(self, secs: float):
-        self.seconds = secs
-
-    def _handle_timeout(self, signum, frame):
-        raise TimeoutErrorSg("Function call timed out")
-
-    def __enter__(self):
-        signal.signal(signal.SIGALRM, self._handle_timeout)
-        signal.alarm(self.seconds)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        signal.alarm(0)
+    v_to_level = {"v": "INFO", "vv": "DEBUG"}
+    if verbose_v is None:
+        loglevel = "ERROR"
+        logging.basicConfig(
+            level=loglevel,
+            stream=sys.stdout,
+            format=logformat,
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+        set_sen2cor_log(loglevel)
+    else:
+        loglevel = v_to_level[verbose_v]
+        logging.basicConfig(
+            level=loglevel,
+            stream=sys.stdout,
+            format=logformat,
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+        set_sen2cor_log(loglevel)
 
 
 def run_s2c(
@@ -507,6 +490,20 @@ def edit_xml_config_file(dem_type):
             raise AttributeError("Attribute dem_type must be srtm or copdem")
     tree.write(s2c_docker_cfg_file, encoding="utf-8", xml_declaration=True)
     logger.info("%s --> edited with DEM infos", s2c_docker_cfg_file)
+
+
+def set_sen2cor_log(loglevel: str) -> None:
+    """
+    Edit xml config file depending on DEM used
+    :param dem_type: DEM type
+    """
+    s2c_docker_cfg_file = "/root/sen2cor/2.9/cfg/L2A_GIPP.xml"
+    tree = ET.parse(s2c_docker_cfg_file)
+    root = tree.getroot()
+    for name in root.iter("Log_Level"):
+        name.text = loglevel
+    tree.write(s2c_docker_cfg_file, encoding="utf-8", xml_declaration=True)
+    logger.info(f"Edited sen2cor loglevel to {loglevel}")
 
 
 def walk(path: Path) -> None:

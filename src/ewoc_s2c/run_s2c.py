@@ -31,9 +31,8 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--verbose",
     type=click.Choice(["v", "vv"]),
-    default="vv",
     help="Set verbosity level: v for info, vv for debug",
-    required=True,
+    required=False,
 )
 def cli(verbose):
     """
