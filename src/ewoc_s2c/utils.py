@@ -24,8 +24,6 @@ from ewoc_s2c import __version__
 
 logger = logging.getLogger(__name__)
 
-TIMEOUT_SECONDS = 900
-
 
 def binary_scl(scl_file: Path, raster_fn: Path) -> None:
     """
