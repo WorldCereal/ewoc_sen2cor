@@ -238,7 +238,7 @@ def find_l2a_band(l2a_folder: Path, band_num: str, res: int) -> Path:
     :return: path to band
     """
     # band_path = None
-    id_img = f"{band_num}_{str(res)}m.jp2"
+    id_img = (f"{band_num}_{str(res)}m.jp2", f"{band_num}_{str(res)}m.tif")
     for file in walk(l2a_folder):
         if str(file).endswith(id_img):
             band_path = file
