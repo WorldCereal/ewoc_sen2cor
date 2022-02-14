@@ -289,11 +289,9 @@ def run_s2c(
     # After installing sen2cor run source Sen2Cor-02.09.00-Linux64/L2A_Bashrc
     # This should work in container and local env
     if only_scl:
-        s2c_cmd = f"{bin_path} {l1c_safe} --output_dir {l2a_out} --sc_only"
+        s2c_cmd = f"{bin_path} {l1c_safe} --output_dir {l2a_out} --sc_only --tif "
     else:
-        s2c_cmd = (
-            f"{bin_path} {l1c_safe} --output_dir {l2a_out} --resolution 10 --debug"
-        )
+        s2c_cmd = f"{bin_path} {l1c_safe} --output_dir {l2a_out} --resolution 10 --tif"
     execute_cmd(s2c_cmd)
     # TODO: select folder using date and tile id from l1 id
     l2a_safe_folder = [
