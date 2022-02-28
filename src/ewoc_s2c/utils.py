@@ -334,7 +334,7 @@ def set_logger(verbose_v: str) -> None:
             format=logformat,
             datefmt="%Y-%m-%d %H:%M:%S",
         )
-        # set_sen2cor_log(loglevel)
+        set_sen2cor_log(loglevel)
     else:
         loglevel = v_to_level[verbose_v]
         logging.basicConfig(
@@ -343,7 +343,7 @@ def set_logger(verbose_v: str) -> None:
             format=logformat,
             datefmt="%Y-%m-%d %H:%M:%S",
         )
-        # set_sen2cor_log(loglevel)
+        set_sen2cor_log(loglevel)
 
 
 def run_s2c(
