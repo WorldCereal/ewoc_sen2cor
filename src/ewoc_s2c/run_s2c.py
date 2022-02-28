@@ -150,12 +150,16 @@ def run_plan(
     "-dem", "--dem_type", default="srtm", help="DEM that will be used in the process"
 )
 @click.option("-sc", "--only_scl", default=False, is_flag=True)
+@click.option(
+    "-cv", "--conv_id", default=False, is_flag=True, help="Convert L1C to L2A ard"
+)
 def run_id(
     pid: str,
     production_id: str,
     data_source: str,
     dem_type: str,
     only_scl: bool = False,
+    conv_id: bool = False,
 ) -> None:
     """
     Run Sen2Cor with a product ID
@@ -178,6 +182,8 @@ def run_id(
     upload_dir.mkdir(exist_ok=True, parents=True)
     if not pid.endswith(".SAFE"):
         pid += ".SAFE"
+    if conv_id:
+        pid = pid.replace("L1C", "L2A")
     if S2PrdIdInfo.is_l2a(pid):
         if data_source == "aws":
             # Only aws cog option supported in full
