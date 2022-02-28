@@ -8,6 +8,7 @@ from pathlib import Path
 
 import click
 from ewoc_dag.bucket.creodias import CreodiasBucket
+from ewoc_dag.eo_prd_id.s2_prd_id import S2PrdIdInfo
 from ewoc_dag.s2_dag import get_s2_product
 from ewoc_db.fill.update_status import get_next_tile
 
@@ -17,6 +18,7 @@ from ewoc_s2c.utils import (
     edit_xml_config_file,
     ewoc_s3_upload,
     l2a_to_ard,
+    l2a_to_ard_aws_cog,
     last_safe,
     make_tmp_dirs,
     run_s2c,
@@ -31,9 +33,8 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--verbose",
     type=click.Choice(["v", "vv"]),
-    default="vv",
     help="Set verbosity level: v for info, vv for debug",
-    required=True,
+    required=False,
 )
 def cli(verbose):
     """
@@ -149,14 +150,16 @@ def run_plan(
     "-dem", "--dem_type", default="srtm", help="DEM that will be used in the process"
 )
 @click.option("-sc", "--only_scl", default=False, is_flag=True)
-@click.option("--no_sen2cor", help="Do not process with Sen2cor", is_flag=True)
+@click.option(
+    "-cv", "--conv_id", default=False, is_flag=True, help="Convert L1C to L2A ard"
+)
 def run_id(
     pid: str,
     production_id: str,
     data_source: str,
     dem_type: str,
     only_scl: bool = False,
-    no_sen2cor: bool = False,
+    conv_id: bool = False,
 ) -> None:
     """
     Run Sen2Cor with a product ID
@@ -179,18 +182,28 @@ def run_id(
     upload_dir.mkdir(exist_ok=True, parents=True)
     if not pid.endswith(".SAFE"):
         pid += ".SAFE"
-    if "L2A" in pid and not no_sen2cor:
-        raise AttributeError("Using L2A product with Sen2cor is impossible")
-
-    if no_sen2cor:
-        if only_scl:
-            scl_folder = get_s2_product(
-                pid, l2a_dir, source=data_source, l2_mask_only=True
+    if conv_id:
+        pid = pid.replace("L1C", "L2A")
+    if S2PrdIdInfo.is_l2a(pid):
+        if data_source == "aws":
+            # Only aws cog option supported in full
+            l2a_folder = get_s2_product(
+                pid,
+                l2a_dir,
+                source=data_source,
+                l2_mask_only=only_scl,
+                aws_l2a_cogs=True,
             )
-            l2a_to_ard(scl_folder, l2a_dir, only_scl)
+            l2a_to_ard_aws_cog(l2a_folder, upload_dir, only_scl)
+            ewoc_s3_upload(upload_dir, production_id)
+        elif data_source == "creodias":
+            l2a_folder = get_s2_product(
+                pid, l2a_dir, source=data_source, l2_mask_only=only_scl
+            )
+            l2a_to_ard(l2a_folder, upload_dir, only_scl)
             ewoc_s3_upload(upload_dir, production_id)
         else:
-            raise NotImplementedError("Only the SCL MASK production is implemented")
+            logger.warning(f"{data_source} is not supported (yet) for L2A ids")
     else:
         # Edit config file
         edit_xml_config_file(dem_type)

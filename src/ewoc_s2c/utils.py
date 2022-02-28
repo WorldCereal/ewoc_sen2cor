@@ -4,11 +4,9 @@ import glob
 import logging
 import os
 import shutil
-import signal
 import subprocess
 import sys
 import uuid
-from contextlib import ContextDecorator
 from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple
@@ -25,8 +23,6 @@ from rasterio.merge import merge
 from ewoc_s2c import __version__
 
 logger = logging.getLogger(__name__)
-
-TIMEOUT_SECONDS = 900
 
 
 def binary_scl(scl_file: Path, raster_fn: Path) -> None:
@@ -185,6 +181,79 @@ def l2a_to_ard(l2a_folder: Path, work_dir: Path, only_scl: bool = False) -> Path
     return ard_folder
 
 
+def l2a_to_ard_aws_cog(
+    l2a_folder: Path, work_dir: Path, only_scl: bool = False
+) -> Path:
+    """
+    Convert an L2A product into EWoC ARD format
+    :param l2a_folder: L2A SAFE folder
+    :param work_dir: Output directory
+    """
+    if only_scl:
+        bands = {
+            "SCL": 20,
+        }
+    else:
+        bands = {
+            "B02": 10,
+            "B03": 10,
+            "B04": 10,
+            "B08": 10,
+            "B05": 20,
+            "B06": 20,
+            "B07": 20,
+            "B11": 20,
+            "B12": 20,
+            "SCL": 20,
+        }
+    # Prepare ewoc folder name
+    prod_name = l2a_folder.name
+    product_id = prod_name
+    platform = product_id.split("_")[0]
+    processing_level = product_id.split("_")[1]
+    date = product_id.split("_")[2]
+    year = date[:4]
+    # Get tile id , remove the T in the beginning
+    tile_id = product_id.split("_")[5][1:]
+    atcor_algo = "L2A"
+    unique_id = "".join(product_id.split("_")[3:6])
+    folder_st = (
+        work_dir
+        / "OPTICAL"
+        / tile_id[:2]
+        / tile_id[2]
+        / tile_id[3:]
+        / year
+        / date.split("T")[0]
+    )
+    dir_name = f"{platform}_{processing_level}_{date}_{unique_id}_{tile_id}"
+    tmp_dir = folder_st / dir_name
+    ard_folder = folder_st / dir_name
+    tmp_dir.mkdir(exist_ok=False, parents=True)
+
+    # Convert bands and SCL
+    for band in bands:
+        band_path = l2a_folder / f"{band}.tif"
+        band_name = band_path.name
+        logger.info("Processing band %s", band_name)
+        out_name = f"{platform}_{atcor_algo}_{date}_{unique_id}_{tile_id}_{band}.tif"
+        raster_fn = folder_st / dir_name / out_name
+        if band == "SCL":
+            out_cld = f"{platform}_{atcor_algo}_{date}_{unique_id}_{tile_id}_MASK.tif"
+            raster_cld = folder_st / dir_name / out_cld
+            binary_scl(band_path, raster_cld)
+            logger.info("Done --> %s", str(raster_cld))
+            try:
+                (raster_cld.with_suffix(".aux.xml")).unlink()
+            except FileNotFoundError:
+                logger.info("Clean")
+
+        else:
+            raster_to_ard(band_path, band, raster_fn)
+            logger.info("Done --> %s", str(raster_fn))
+    return ard_folder
+
+
 def get_s2_prodname(safe_path: Path) -> str:
     """
     Get Sentinel-2 product name
@@ -255,39 +324,26 @@ def set_logger(verbose_v: str) -> None:
     :param loglevel:
     :return:
     """
-    v_to_level = {"v": "INFO", "vv": "DEBUG"}
-    loglevel = v_to_level[verbose_v]
     logformat = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
-    logging.basicConfig(
-        level=loglevel, stream=sys.stdout, format=logformat, datefmt="%Y-%m-%d %H:%M:%S"
-    )
-
-
-class TimeoutErrorSg(Exception):
-    """
-    Timeout Exception
-    """
-
-    pass
-
-
-class TimeOut(ContextDecorator):
-    """
-    Time out decorator
-    """
-
-    def __init__(self, secs: float):
-        self.seconds = secs
-
-    def _handle_timeout(self, signum, frame):
-        raise TimeoutErrorSg("Function call timed out")
-
-    def __enter__(self):
-        signal.signal(signal.SIGALRM, self._handle_timeout)
-        signal.alarm(self.seconds)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        signal.alarm(0)
+    v_to_level = {"v": "INFO", "vv": "DEBUG"}
+    if verbose_v is None:
+        loglevel = "ERROR"
+        logging.basicConfig(
+            level=loglevel,
+            stream=sys.stdout,
+            format=logformat,
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+        set_sen2cor_log(loglevel)
+    else:
+        loglevel = v_to_level[verbose_v]
+        logging.basicConfig(
+            level=loglevel,
+            stream=sys.stdout,
+            format=logformat,
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+        set_sen2cor_log(loglevel)
 
 
 def run_s2c(
@@ -507,6 +563,20 @@ def edit_xml_config_file(dem_type):
             raise AttributeError("Attribute dem_type must be srtm or copdem")
     tree.write(s2c_docker_cfg_file, encoding="utf-8", xml_declaration=True)
     logger.info("%s --> edited with DEM infos", s2c_docker_cfg_file)
+
+
+def set_sen2cor_log(loglevel: str) -> None:
+    """
+    Edit xml config file depending on DEM used
+    :param dem_type: DEM type
+    """
+    s2c_docker_cfg_file = "/root/sen2cor/2.9/cfg/L2A_GIPP.xml"
+    tree = ET.parse(s2c_docker_cfg_file)
+    root = tree.getroot()
+    for name in root.iter("Log_Level"):
+        name.text = loglevel
+    tree.write(s2c_docker_cfg_file, encoding="utf-8", xml_declaration=True)
+    logger.info(f"Edited sen2cor loglevel to {loglevel}")
 
 
 def walk(path: Path) -> None:
