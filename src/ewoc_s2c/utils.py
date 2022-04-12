@@ -108,9 +108,13 @@ def scl_to_ard(work_dir: Path, prod_name: str) -> None:
         logger.info("Clean")
 
 
-def l2a_to_ard(l2a_folder: Path, work_dir: Path, only_scl: bool = False) -> Path:
+def l2a_to_ard(
+    l2a_folder: Path, work_dir: Path, pid: str, provider: str, only_scl: bool = False
+) -> Path:
     """
     Convert an L2A product into EWoC ARD format
+    :param only_scl:
+    :param pid:
     :param l2a_folder: L2A SAFE folder
     :param work_dir: Output directory
     """
@@ -132,7 +136,7 @@ def l2a_to_ard(l2a_folder: Path, work_dir: Path, only_scl: bool = False) -> Path
             "SCL": 20,
         }
     # Prepare ewoc folder name
-    prod_name = get_s2_prodname(l2a_folder)
+    prod_name = pid.replace(".SAFE", "")
     product_id = prod_name
     platform = product_id.split("_")[0]
     processing_level = product_id.split("_")[1]
@@ -159,7 +163,10 @@ def l2a_to_ard(l2a_folder: Path, work_dir: Path, only_scl: bool = False) -> Path
     # Convert bands and SCL
     for band in bands:
         res = bands[band]
-        band_path = find_l2a_band(l2a_folder, band, bands[band])
+        if provider == "aws_sng":
+            band_path = find_l2a_band_sng(l2a_folder, band, res)
+        else:
+            band_path = find_l2a_band(l2a_folder, band, res)
         band_name = band_path.parts[-1]
         band_name = band_name.replace(".jp2", ".tif").replace(f"_{str(res)}m", "")
         logger.info("Processing band %s", band_name)
@@ -314,6 +321,25 @@ def find_l2a_band(l2a_folder: Path, band_num: str, res: int) -> Path:
     id_img = f"{band_num}_{str(res)}m.jp2"
     for file in walk(l2a_folder):
         if str(file).endswith(id_img):
+            band_path = file
+    return band_path
+
+
+def find_l2a_band_sng(l2a_folder: Path, band_num: str, res: int) -> Path:
+    """
+    Find L2A band at specific resolution
+    :param l2a_folder: L2A product folder
+    :param band_num: BXX/AOT/SCL/...
+    :param res: resolution (10/20/60)
+    :return: path to band
+    """
+    # band_path = None
+    id_img = f"{band_num}.jp2"
+    res_img = f"R{res}m"
+    for file in walk(l2a_folder):
+        fold_img = file.parts[-2]
+        if str(file).endswith(id_img) and res_img == fold_img:
+            print(band_num, file)
             band_path = file
     return band_path
 
