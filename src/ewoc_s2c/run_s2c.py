@@ -196,11 +196,22 @@ def run_id(
             )
             l2a_to_ard_aws_cog(l2a_folder, upload_dir, only_scl)
             ewoc_s3_upload(upload_dir, production_id)
+        elif data_source == "aws_sng":
+            l2a_folder = get_s2_product(
+                pid,
+                l2a_dir,
+                source="aws",
+                l2_mask_only=only_scl,
+                aws_l2a_cogs=False,
+            )
+            logger.info("Product downloaded from Sinergise bucket")
+            l2a_to_ard(l2a_folder, upload_dir, pid, data_source, only_scl)
+            ewoc_s3_upload(upload_dir, production_id)
         elif data_source == "creodias":
             l2a_folder = get_s2_product(
                 pid, l2a_dir, source=data_source, l2_mask_only=only_scl
             )
-            l2a_to_ard(l2a_folder, upload_dir, only_scl)
+            l2a_to_ard(l2a_folder, upload_dir, pid, only_scl)
             ewoc_s3_upload(upload_dir, production_id)
         else:
             logger.warning(f"{data_source} is not supported (yet) for L2A ids")
@@ -221,7 +232,7 @@ def run_id(
         # Run sen2cor in subprocess
         l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a, only_scl)
         # Convert the sen2cor output to ewoc ard format
-        l2a_to_ard(l2a_safe_folder, upload_dir, only_scl)
+        l2a_to_ard(l2a_safe_folder, upload_dir, pid, only_scl)
         # Delete local folders
         clean(out_dir_l2a)
         clean(dem_tmp_dir)
