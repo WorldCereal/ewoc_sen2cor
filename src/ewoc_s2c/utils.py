@@ -339,7 +339,6 @@ def find_l2a_band_sng(l2a_folder: Path, band_num: str, res: int) -> Path:
     for file in walk(l2a_folder):
         fold_img = file.parts[-2]
         if str(file).endswith(id_img) and res_img == fold_img:
-            print(band_num, file)
             band_path = file
     return band_path
 
@@ -436,13 +435,11 @@ def ewoc_s3_upload(local_path: Path, ard_prd_prefix: str) -> None:
         # you'll need to define some env vars needed for the s3 client
         # and destination path
         s3_bucket = EWOCARDBucket()
-        n_files, _ = s3_bucket.upload_ard_prd(local_path, ard_prd_prefix)
-        upload_folder = get_last_folder(local_path)
-        upload_location = (
-            f"s3://{s3_bucket.bucket_name}/{ard_prd_prefix}{upload_folder}"
+        nb_prd_pr, size_of, up_dir_pr = s3_bucket.upload_ard_prd(
+            local_path, ard_prd_prefix
         )
         # This print is made on purpose (not debug) :)
-        print(f"Uploaded {n_files} tif files to bucket | {upload_location}")
+        print(f"Uploaded {nb_prd_pr} tif files to bucket | {up_dir_pr}")
         # <!> Delete output folder after upload
         clean(local_path)
         logger.info("%s cleared", local_path)
