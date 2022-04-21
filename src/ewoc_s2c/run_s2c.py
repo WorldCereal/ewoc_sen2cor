@@ -116,7 +116,7 @@ def run_id(
             l2a_to_ard(l2a_folder, upload_dir, pid, data_source, only_scl)
             ewoc_s3_upload(upload_dir, production_id)
         else:
-            logger.warning(f"{data_source} is not supported (yet) for L2A ids")
+            logger.warning("%s is not supported (yet) for L2A ids", data_source)
     else:
         # Edit config file
         edit_xml_config_file(dem_type)
