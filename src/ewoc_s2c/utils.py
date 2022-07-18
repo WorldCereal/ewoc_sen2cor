@@ -183,13 +183,18 @@ def l2a_to_ard(
                 logger.info("Clean")
 
         else:
-            raster_to_ard(band_path, band, raster_fn)
+            raster_to_ard(
+                band_path, band, raster_fn, pid=product_id, data_source=provider
+            )
             logger.info("Done --> %s", str(raster_fn))
     return ard_folder
 
 
 def l2a_to_ard_aws_cog(
-    l2a_folder: Path, work_dir: Path, only_scl: bool = False
+    l2a_folder: Path,
+    work_dir: Path,
+    provider: str,
+    only_scl: bool = False,
 ) -> Path:
     """
     Convert an L2A product into EWoC ARD format
@@ -256,7 +261,9 @@ def l2a_to_ard_aws_cog(
                 logger.info("Clean")
 
         else:
-            raster_to_ard(band_path, band, raster_fn)
+            raster_to_ard(
+                band_path, band, raster_fn, pid=product_id, data_source=provider
+            )
             logger.info("Done --> %s", str(raster_fn))
     return ard_folder
 
@@ -275,12 +282,16 @@ def get_s2_prodname(safe_path: Path) -> str:
     return prodname
 
 
-def raster_to_ard(raster_path: Path, band_num: str, raster_fn: Path) -> None:
+def raster_to_ard(
+    raster_path: Path, band_num: str, raster_fn: Path, data_source: str, pid: str
+) -> None:
     """
     Read raster and update internals to fit ewoc ard specs
     :param raster_path: Path to raster file
     :param band_num: Band number, B02 for example
     :param raster_fn: Output raster path
+    :param data_source: source of the Sentinel-2 data
+    :param pid: Sentinel-2 product id
     """
     with rasterio.Env(GDAL_CACHEMAX=2048):
         with rasterio.open(raster_path, "r") as src:
@@ -305,6 +316,8 @@ def raster_to_ard(raster_path: Path, band_num: str, raster_fn: Path) -> None:
         out.update_tags(TIFFTAG_DATETIME=str(datetime.now()))
         out.update_tags(TIFFTAG_IMAGEDESCRIPTION="EWoC Sentinel-2 ARD")
         out.update_tags(TIFFTAG_SOFTWARE="EWoC S2 Processor " + str(__version__))
+        out.update_tags(TIFFTAG_DATASOURCE="S2 data source:" + data_source)
+        out.update_tags(TIFFTAG_PRODUCTID="S2 product id:" + pid)
 
         out.write(raster_array)
 

@@ -96,7 +96,7 @@ def run_id(
                 l2_mask_only=only_scl,
                 aws_l2a_cogs=True,
             )
-            l2a_to_ard_aws_cog(l2a_folder, upload_dir, only_scl)
+            l2a_to_ard_aws_cog(l2a_folder, upload_dir, data_source, only_scl)
             ewoc_s3_upload(upload_dir, production_id)
         elif data_source == "aws_sng":
             l2a_folder = get_s2_product(
