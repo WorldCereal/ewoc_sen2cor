@@ -223,7 +223,6 @@ def l2a_to_ard_aws_cog(
     prod_name = l2a_folder.name
     product_id = prod_name
     platform = product_id.split("_")[0]
-    processing_level = product_id.split("_")[1]
     date = product_id.split("_")[2]
     year = date[:4]
     # Get tile id , remove the T in the beginning
@@ -239,7 +238,7 @@ def l2a_to_ard_aws_cog(
         / year
         / date.split("T")[0]
     )
-    dir_name = f"{platform}_{processing_level}_{date}_{unique_id}_{tile_id}"
+    dir_name = f"{platform}_MSIL2A_{date}_{unique_id}_{tile_id}"
     tmp_dir = folder_st / dir_name
     ard_folder = folder_st / dir_name
     tmp_dir.mkdir(exist_ok=False, parents=True)
