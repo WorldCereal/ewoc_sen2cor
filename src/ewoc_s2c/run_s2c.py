@@ -125,9 +125,13 @@ def run_id(
         dem_tmp_dir, dem_syms = custom_s2c_dem(dem_type, tile)
         out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
         # Get Sat product by id using ewoc_dag
-        if data_source == "aws":
+        if data_source == "aws_sng":
             l1c_safe_folder = get_s2_product(
-                pid, out_dir_l1c, source=data_source, aws_l1c_safe=True
+                pid, 
+                out_dir_l1c, 
+                source='aws', 
+                aws_l1c_safe=True,
+                aws_l2a_cogs=False
             )
         else:
             l1c_safe_folder = get_s2_product(pid, out_dir_l1c, source=data_source)
