@@ -121,9 +121,9 @@ def run_id(
         # Get Sat product by id using ewoc_dag
         if data_source == "aws_sng":
             l1c_safe_folder = get_s2_product(
-                pid, 
-                out_dir_l1c, 
-                source='aws', 
+                pid,
+                out_dir_l1c,
+                source='aws',
                 aws_l1c_safe=True,
                 aws_l2a_cogs=False
             )
