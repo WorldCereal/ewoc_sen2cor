@@ -17,6 +17,7 @@ import numpy as np
 import rasterio
 from ewoc_dag.bucket.ewoc import EWOCARDBucket
 from ewoc_dag.cli_dem import get_dem_data
+from ewoc_dag.eo_prd_id.s2_prd_id import S2PrdIdInfo
 from ewoc_dag.srtm_dag import get_srtm3s_ids
 from rasterio.merge import merge
 
@@ -163,7 +164,7 @@ def l2a_to_ard(
     # Convert bands and SCL
     for band in bands:
         res = bands[band]
-        if provider == "aws_sng":
+        if provider == "aws_sng" and S2PrdIdInfo.is_l2a(pid):
             band_path = find_l2a_band_sng(l2a_folder, band, res)
         else:
             band_path = find_l2a_band(l2a_folder, band, res)
