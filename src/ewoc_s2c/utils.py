@@ -316,8 +316,8 @@ def raster_to_ard(
         out.update_tags(TIFFTAG_DATETIME=str(datetime.now()))
         out.update_tags(TIFFTAG_IMAGEDESCRIPTION="EWoC Sentinel-2 ARD")
         out.update_tags(TIFFTAG_SOFTWARE="EWoC S2 Processor " + str(__version__))
-        out.update_tags(TIFFTAG_DATASOURCE="S2 data source:" + data_source)
-        out.update_tags(TIFFTAG_PRODUCTID="S2 product id:" + pid)
+        out.update_tags(DATASOURCE=f"S2 data source: {data_source}")
+        out.update_tags(PRODUCTID=f"S2 product id: {pid}")
 
         out.write(raster_array)
 
