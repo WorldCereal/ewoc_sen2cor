@@ -52,16 +52,12 @@ def cli(verbose):
     "-dem", "--dem_type", default="srtm", help="DEM that will be used in the process"
 )
 @click.option("-sc", "--only_scl", default=False, is_flag=True)
-@click.option(
-    "-cv", "--conv_id", default=False, is_flag=True, help="Convert L1C to L2A ard"
-)
 def run_id(
     pid: str,
     production_id: str,
     data_source: str,
     dem_type: str,
     only_scl: bool = False,
-    conv_id: bool = False,
 ) -> None:
     """
     Run Sen2Cor with a product ID
@@ -84,8 +80,6 @@ def run_id(
     upload_dir.mkdir(exist_ok=True, parents=True)
     if not pid.endswith(".SAFE"):
         pid += ".SAFE"
-    if conv_id:
-        pid = pid.replace("L1C", "L2A")
     if S2PrdIdInfo.is_l2a(pid):
         if data_source == "aws":
             # Only aws cog option supported in full
@@ -96,7 +90,7 @@ def run_id(
                 l2_mask_only=only_scl,
                 aws_l2a_cogs=True,
             )
-            l2a_to_ard_aws_cog(l2a_folder, upload_dir, only_scl)
+            l2a_to_ard_aws_cog(l2a_folder, upload_dir, data_source, only_scl)
             ewoc_s3_upload(upload_dir, production_id)
         elif data_source == "aws_sng":
             l2a_folder = get_s2_product(
@@ -125,9 +119,13 @@ def run_id(
         dem_tmp_dir, dem_syms = custom_s2c_dem(dem_type, tile)
         out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
         # Get Sat product by id using ewoc_dag
-        if data_source == "aws":
+        if data_source == "aws_sng":
             l1c_safe_folder = get_s2_product(
-                pid, out_dir_l1c, source=data_source, aws_l1c_safe=True
+                pid,
+                out_dir_l1c,
+                source='aws',
+                aws_l1c_safe=True,
+                aws_l2a_cogs=False
             )
         else:
             l1c_safe_folder = get_s2_product(pid, out_dir_l1c, source=data_source)
