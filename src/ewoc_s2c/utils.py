@@ -121,7 +121,7 @@ def apply_offset(raster_band: NDArray[int], meta_xml_file: str, band_id: str) ->
     # Read metadata
     offset_band = retrieve_offset_from_meta(meta_xml_file, band_id)
     # Apply offset
-    logger.info(f'For band {band_id}, offset is {offset_band}')
+    logger.info('For band %s, offset is %s', band_id, offset_band)
     raster_band = raster_band + offset_band
     return raster_band
 
