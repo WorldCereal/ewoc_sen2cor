@@ -330,6 +330,9 @@ def raster_to_ard(
         with rasterio.open(raster_path, "r") as src:
             raster_array = src.read()
 
+            if S2PrdIdInfo(pid).datatake_sensing_start_time.date() > datetime(2022, 1, 25).date() and S2PrdIdInfo(pid).pdgs_processing_baseline_number != '0400':
+                logger.warning("Need to handle processing baselines after 0400 and check if an offset has to be applied")
+
             if S2PrdIdInfo(pid).pdgs_processing_baseline_number == '0400' and data_source == 'aws_sng':
                 logger.info(f'Baseline is {S2PrdIdInfo(pid).pdgs_processing_baseline_number} and provider is {data_source}')
                 meta_xml_file = raster_path.parents[2] / "product/metadata.xml"
