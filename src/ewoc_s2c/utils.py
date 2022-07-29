@@ -465,7 +465,7 @@ def run_s2c(
         )
     try:
         execute_cmd(s2c_cmd)
-    except Exception:
+    except RuntimeError:
         logger.error("Sen2cor execution error")
         sys.exit(1)
     # TODO: select folder using date and tile id from l1 id
