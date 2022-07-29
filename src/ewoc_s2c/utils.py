@@ -7,7 +7,9 @@ import shutil
 import subprocess
 import sys
 import uuid
+import xml.etree.ElementTree as ET
 from datetime import datetime
+from nptyping import NDArray
 from pathlib import Path
 from typing import List, Tuple
 
@@ -107,6 +109,20 @@ def scl_to_ard(work_dir: Path, prod_name: str) -> None:
     except FileNotFoundError:
         logger.info("Clean")
 
+def retrieve_offset_from_meta(meta_xml_file: str, band_id: str) -> int:
+    tree = ET.parse(meta_xml_file)
+    root = tree.getroot()
+    offset_band = root.find(f'.//BOA_ADD_OFFSET[@band_id="{band_id}"]').text
+    offset_band = int(offset_band)
+    return offset_band
+
+def apply_offset(raster_band: NDArray[int], meta_xml_file: str, band_id: str) -> NDArray[int]:
+    # Read metadata
+    offset_band = retrieve_offset_from_meta(meta_xml_file, band_id)
+    # Apply offset
+    logger.info('For band %s, offset is %s', band_id, offset_band)
+    raster_band = raster_band + offset_band
+    return raster_band
 
 def l2a_to_ard(
     l2a_folder: Path, work_dir: Path, pid: str, provider: str, only_scl: bool = False
@@ -291,9 +307,35 @@ def raster_to_ard(
     :param data_source: source of the Sentinel-2 data
     :param pid: Sentinel-2 product id
     """
+
+    band_id = {
+        "B01": 0,
+        "B02": 1,
+        "B03": 2,
+        "B04": 3,
+        "B05": 4,
+        "B06": 5,
+        "B07": 6,
+        "B08": 7,
+        "B08A": 8,
+        "B09": 9,
+        "B10": 10,
+        "B11": 11,
+        "B12": 12,
+    }
+
     with rasterio.Env(GDAL_CACHEMAX=2048):
         with rasterio.open(raster_path, "r") as src:
             raster_array = src.read()
+
+            if S2PrdIdInfo(pid).datatake_sensing_start_time.date() > datetime(2022, 1, 25).date() and S2PrdIdInfo(pid).pdgs_processing_baseline_number != '0400':
+                logger.warning("Need to handle processing baselines after 0400 and check if an offset has to be applied")
+
+            if S2PrdIdInfo(pid).pdgs_processing_baseline_number == '0400' and data_source == 'aws_sng':
+                logger.info(f'Baseline is {S2PrdIdInfo(pid).pdgs_processing_baseline_number} and provider is {data_source}')
+                meta_xml_file = raster_path.parents[2] / "product/metadata.xml"
+                raster_array = apply_offset(raster_array, meta_xml_file, str(band_id[band_num]))
+
             meta = src.meta.copy()
     meta["driver"] = "GTiff"
     meta["nodata"] = 0
