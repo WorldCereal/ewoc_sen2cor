@@ -9,7 +9,6 @@ import sys
 import uuid
 import xml.etree.ElementTree as ET
 from datetime import datetime
-from nptyping import NDArray
 from pathlib import Path
 from typing import List, Tuple
 
@@ -21,6 +20,7 @@ from ewoc_dag.bucket.ewoc import EWOCARDBucket
 from ewoc_dag.cli_dem import get_dem_data
 from ewoc_dag.eo_prd_id.s2_prd_id import S2PrdIdInfo
 from ewoc_dag.srtm_dag import get_srtm3s_ids
+from nptyping import NDArray
 from rasterio.merge import merge
 
 from ewoc_s2c import __version__
@@ -109,6 +109,7 @@ def scl_to_ard(work_dir: Path, prod_name: str) -> None:
     except FileNotFoundError:
         logger.info("Clean")
 
+
 def retrieve_offset_from_meta(meta_xml_file: str, band_id: str) -> int:
     tree = ET.parse(meta_xml_file)
     root = tree.getroot()
@@ -116,13 +117,17 @@ def retrieve_offset_from_meta(meta_xml_file: str, band_id: str) -> int:
     offset_band = int(offset_band)
     return offset_band
 
-def apply_offset(raster_band: NDArray[int], meta_xml_file: str, band_id: str) -> NDArray[int]:
+
+def apply_offset(
+    raster_band: NDArray[int], meta_xml_file: str, band_id: str
+) -> NDArray[int]:
     # Read metadata
     offset_band = retrieve_offset_from_meta(meta_xml_file, band_id)
     # Apply offset
-    logger.info('For band %s, offset is %s', band_id, offset_band)
+    logger.info("For band %s, offset is %s", band_id, offset_band)
     raster_band = raster_band + offset_band
     return raster_band
+
 
 def l2a_to_ard(
     l2a_folder: Path, work_dir: Path, pid: str, provider: str, only_scl: bool = False
@@ -328,13 +333,26 @@ def raster_to_ard(
         with rasterio.open(raster_path, "r") as src:
             raster_array = src.read()
 
-            if S2PrdIdInfo(pid).datatake_sensing_start_time.date() > datetime(2022, 1, 25).date() and S2PrdIdInfo(pid).pdgs_processing_baseline_number != '0400':
-                logger.warning("Need to handle processing baselines after 0400 and check if an offset has to be applied")
+            if (
+                S2PrdIdInfo(pid).datatake_sensing_start_time.date()
+                > datetime(2022, 1, 25).date()
+                and S2PrdIdInfo(pid).pdgs_processing_baseline_number != "0400"
+            ):
+                logger.warning(
+                    "Need to handle processing baselines after 0400 and check if an offset has to be applied"
+                )
 
-            if S2PrdIdInfo(pid).pdgs_processing_baseline_number == '0400' and data_source == 'aws_sng':
-                logger.info(f'Baseline is {S2PrdIdInfo(pid).pdgs_processing_baseline_number} and provider is {data_source}')
+            if (
+                S2PrdIdInfo(pid).pdgs_processing_baseline_number == "0400"
+                and data_source == "aws_sng"
+            ):
+                logger.info(
+                    f"Baseline is {S2PrdIdInfo(pid).pdgs_processing_baseline_number} and provider is {data_source}"
+                )
                 meta_xml_file = raster_path.parents[2] / "product/metadata.xml"
-                raster_array = apply_offset(raster_array, meta_xml_file, str(band_id[band_num]))
+                raster_array = apply_offset(
+                    raster_array, meta_xml_file, str(band_id[band_num])
+                )
 
             meta = src.meta.copy()
     meta["driver"] = "GTiff"
@@ -445,7 +463,11 @@ def run_s2c(
         s2c_cmd = (
             f"{bin_path} {l1c_safe} --output_dir {l2a_out} --resolution 10 --debug"
         )
-    execute_cmd(s2c_cmd)
+    try:
+        execute_cmd(s2c_cmd)
+    except Exception:
+        logger.error("Sen2cor execution error")
+        sys.exit(1)
     # TODO: select folder using date and tile id from l1 id
     l2a_safe_folder = [
         l2a_out / fold for fold in os.listdir(l2a_out) if fold.endswith("SAFE")
@@ -685,6 +707,7 @@ def execute_cmd(cmd: str) -> None:
             err.stdout,
             err.stderr,
         )
+        raise
 
 
 def get_last_folder(folder_path: Path) -> Path:
