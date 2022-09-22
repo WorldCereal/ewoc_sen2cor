@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 LABEL maintainer="Fahd Benatia <fahd.benatia@csgroup.eu>"
 
 ENV LC_ALL=C.UTF-8
