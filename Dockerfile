@@ -1,23 +1,26 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 LABEL maintainer="Fahd Benatia <fahd.benatia@csgroup.eu>"
 
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
 ## Install dataship and eotile
-RUN apt-get update -y && apt-get install -y python3-pip && apt-get install -y wget git \
+RUN apt-get update -y \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --fix-missing --no-install-recommends \
+        python3-pip \
+        wget git \
+        apt-utils file \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
 RUN pip3 install -U pip
 
-ARG EOTILE_VERSION=0.2.6
-RUN pip3 install eotile>=${EOTILE_VERSION}
-
+RUN pip3 install --no-cache-dir rfc5424-logging-handler
 
 ARG EWOC_DATASHIP_VERSION=0.8.6
 LABEL EWOC_DATASHIP="${EWOC_DATASHIP_VERSION}"
 COPY ewoc_dag-${EWOC_DATASHIP_VERSION}.tar.gz /opt
 RUN pip3 install /opt/ewoc_dag-${EWOC_DATASHIP_VERSION}.tar.gz
-
 
 ARG EWOC_DB_VERSION=0.2.1
 LABEL EWOC_DB="${EWOC_DB_VERSION}"
