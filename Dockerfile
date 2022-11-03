@@ -17,7 +17,7 @@ RUN pip3 install -U pip
 
 RUN pip3 install --no-cache-dir rfc5424-logging-handler
 
-ARG EWOC_DATASHIP_VERSION=0.8.3
+ARG EWOC_DATASHIP_VERSION=0.8.6
 LABEL EWOC_DATASHIP="${EWOC_DATASHIP_VERSION}"
 COPY ewoc_dag-${EWOC_DATASHIP_VERSION}.tar.gz /opt
 RUN pip3 install /opt/ewoc_dag-${EWOC_DATASHIP_VERSION}.tar.gz
