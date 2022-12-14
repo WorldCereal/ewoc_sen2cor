@@ -509,8 +509,7 @@ def ewoc_s3_upload(local_path: Path, ard_prd_prefix: str) -> None:
         # Try to upload to s3 bucket,
         # you'll need to define some env vars needed for the s3 client
         # and destination path
-        s3_bucket = EWOCARDBucket()
-        nb_prd_pr, size_of, up_dir_pr = s3_bucket.upload_ard_prd(
+        nb_prd_pr, __unused, up_dir_pr = EWOCARDBucket().upload_ard_prd(
             local_path, ard_prd_prefix
         )
         # This print is made on purpose (not debug) :)
