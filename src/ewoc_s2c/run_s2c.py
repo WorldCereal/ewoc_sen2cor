@@ -83,30 +83,80 @@ def run_id(
     if S2PrdIdInfo.is_l2a(pid):
         if data_source == "aws":
             # Only aws cog option supported in full
-            l2a_folder = get_s2_product(
-                pid,
-                l2a_dir,
-                source=data_source,
-                l2_mask_only=only_scl,
-                aws_l2a_cogs=True,
-            )
+            try:
+                l2a_folder = get_s2_product(
+                    pid,
+                    l2a_dir,
+                    source=data_source,
+                    l2_mask_only=only_scl,
+                    aws_l2a_cogs=True)
+            except:
+                try:
+                    date_acq = pid.split('_')[2][:8]
+                    date_end = pid.split('_')[-1][:8]
+                    if date_acq!=date_end:
+                        pid_new = pid.replace(date_acq, date_end)
+                    logger.info("The product %s is not found using acquisition date %s. Try to use production date %s", pid, date_acq, date_end)
+                    l2a_folder = get_s2_product(
+                        pid_new,
+                        l2a_dir,
+                        source=data_source,
+                        l2_mask_only=only_scl,
+                        aws_l2a_cogs=True)
+                except:
+                    logger.error("The product %s is not found", pid)
+                    raise ValueError(f"The product {pid} is not found")
             l2a_to_ard_aws_cog(l2a_folder, upload_dir, data_source, only_scl)
             ewoc_s3_upload(upload_dir, production_id)
         elif data_source == "aws_sng":
-            l2a_folder = get_s2_product(
-                pid,
-                l2a_dir,
-                source="aws",
-                l2_mask_only=only_scl,
-                aws_l2a_cogs=False,
-            )
+            try:
+                l2a_folder = get_s2_product(
+                    pid,
+                    l2a_dir,
+                    source="aws",
+                    l2_mask_only=only_scl,
+                    aws_l2a_cogs=False)
+            except:
+                try:
+                    date_acq = pid.split('_')[2][:8]
+                    date_end = pid.split('_')[-1][:8]
+                    if date_acq!=date_end:
+                        pid_new = pid.replace(date_acq, date_end)
+                    logger.info("The product %s is not found using acquisition date %s. Try to use production date %s", pid, date_acq, date_end)
+                    l2a_folder = get_s2_product(
+                        pid_new,
+                        l2a_dir,
+                        source="aws",
+                        l2_mask_only=only_scl,
+                        aws_l2a_cogs=False)
+                except:
+                    logger.error("The product %s is not found", pid)
+                    raise ValueError(f"The product {pid} is not found")
             logger.info("Product downloaded from Sinergise bucket")
             l2a_to_ard(l2a_folder, upload_dir, pid, data_source, only_scl)
             ewoc_s3_upload(upload_dir, production_id)
         elif data_source == "creodias":
-            l2a_folder = get_s2_product(
-                pid, l2a_dir, source=data_source, l2_mask_only=only_scl
-            )
+            try:
+                l2a_folder = get_s2_product(
+                    pid,
+                    l2a_dir,
+                    source=data_source,
+                    l2_mask_only=only_scl)
+            except:
+                try:
+                    date_acq = pid.split('_')[2][:8]
+                    date_end = pid.split('_')[-1][:8]
+                    if date_acq!=date_end:
+                        pid_new = pid.replace(date_acq, date_end)
+                    logger.info("The product %s is not found using acquisition date %s. Try to use production date %s", pid, date_acq, date_end)
+                    l2a_folder = get_s2_product(
+                        pid_new,
+                        l2a_dir,
+                        source=data_source,
+                        l2_mask_only=only_scl)
+                except:
+                    logger.error("The product %s is not found", pid)
+                    raise ValueError(f"The product {pid} is not found")
             l2a_to_ard(l2a_folder, upload_dir, pid, data_source, only_scl)
             ewoc_s3_upload(upload_dir, production_id)
         else:
@@ -120,15 +170,43 @@ def run_id(
         out_dir_l1c, out_dir_l2a = make_tmp_dirs(l2a_dir)
         # Get Sat product by id using ewoc_dag
         if data_source == "aws_sng":
-            l1c_safe_folder = get_s2_product(
-                pid,
-                out_dir_l1c,
-                source='aws',
-                aws_l1c_safe=True,
-                aws_l2a_cogs=False
-            )
+            try:
+                l1c_safe_folder = get_s2_product(
+                    pid,
+                    out_dir_l1c,
+                    source='aws',
+                    aws_l1c_safe=True,
+                    aws_l2a_cogs=False)
+            except:
+                try:
+                    date_acq = pid.split('_')[2][:8]
+                    date_end = pid.split('_')[-1][:8]
+                    if date_acq!=date_end:
+                        pid_new = pid.replace(date_acq, date_end)
+                    logger.info("The product %s is not found using acquisition date %s. Try to use production date %s", pid, date_acq, date_end)
+                    l1c_safe_folder = get_s2_product(
+                        pid_new,
+                        out_dir_l1c,
+                        source='aws',
+                        aws_l1c_safe=True,
+                        aws_l2a_cogs=False)
+                except:
+                    logger.error("The product %s is not found", pid)
+                    raise ValueError(f"The product {pid} is not found")
         else:
-            l1c_safe_folder = get_s2_product(pid, out_dir_l1c, source=data_source)
+            try:
+                l1c_safe_folder = get_s2_product(pid, out_dir_l1c, source=data_source)
+            except:
+                try:
+                    date_acq = pid.split('_')[2][:8]
+                    date_end = pid.split('_')[-1][:8]
+                    if date_acq!=date_end:
+                        pid_new = pid.replace(date_acq, date_end)
+                    logger.info("The product %s is not found using acquisition date %s. Try to use production date %s", pid, date_acq, date_end)
+                    l1c_safe_folder = get_s2_product(pid_new, out_dir_l1c, source=data_source)
+                except:
+                    logger.error("The product %s is not found", pid)
+                    raise ValueError(f"The product {pid} is not found")
         # Run sen2cor in subprocess
         l2a_safe_folder = run_s2c(l1c_safe_folder, out_dir_l2a, only_scl)
         # Convert the sen2cor output to ewoc ard format
