@@ -1,26 +1,25 @@
 """ EWoC Sen2Cor utils module"""
-
+from datetime import datetime
 import glob
 import logging
 import os
+from pathlib import Path
 import shutil
 import subprocess
 import sys
+from typing import List, Tuple
 import uuid
 import xml.etree.ElementTree as ET
-from datetime import datetime
-from pathlib import Path
-from typing import List, Tuple
 
 import boto3.exceptions
-import lxml.etree as ET
-import numpy as np
-import rasterio
 from ewoc_dag.bucket.ewoc import EWOCARDBucket
 from ewoc_dag.cli_dem import get_dem_data
 from ewoc_dag.eo_prd_id.s2_prd_id import S2PrdIdInfo
 from ewoc_dag.srtm_dag import get_srtm3s_ids
+import lxml.etree as ET
 from nptyping import NDArray
+import numpy as np
+import rasterio
 from rasterio.merge import merge
 
 from ewoc_s2c import __version__
