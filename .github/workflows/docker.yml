@@ -55,13 +55,6 @@ jobs:
           tag: "${{ steps.cots-versions.outputs.EWOC_DATASHIP_VERSION }}"
           fileName: "ewoc_dag-${{ steps.cots-versions.outputs.EWOC_DATASHIP_VERSION }}.tar.gz"
           token: ${{ secrets.CS_ORG_TOKEN }}
-      - name: Download EWoC DB
-        uses: robinraju/release-downloader@v1.5
-        with:
-          repository: "WorldCereal/ewoc_db"
-          tag: "${{ steps.cots-versions.outputs.EWOC_DB_VERSION }}"
-          fileName: "ewoc_db-${{ steps.cots-versions.outputs.EWOC_DB_VERSION }}.tar.gz"
-          token: ${{ secrets.CS_ORG_TOKEN }}
       - name: Build Docker images
         uses: docker/build-push-action@v3.2.0
         with:

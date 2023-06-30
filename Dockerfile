@@ -22,11 +22,6 @@ LABEL EWOC_DATASHIP="${EWOC_DATASHIP_VERSION}"
 COPY ewoc_dag-${EWOC_DATASHIP_VERSION}.tar.gz /opt
 RUN pip3 install /opt/ewoc_dag-${EWOC_DATASHIP_VERSION}.tar.gz
 
-ARG EWOC_DB_VERSION=0.2.1
-LABEL EWOC_DB="${EWOC_DB_VERSION}"
-COPY ewoc_db-${EWOC_DB_VERSION}.tar.gz /opt
-RUN pip3 install /opt/ewoc_db-${EWOC_DB_VERSION}.tar.gz
-
 ## Install sen2cor
 RUN wget --quiet -P /opt http://step.esa.int/thirdparties/sen2cor/2.9.0/Sen2Cor-02.09.00-Linux64.run \
     && chmod +x /opt/Sen2Cor-02.09.00-Linux64.run \
