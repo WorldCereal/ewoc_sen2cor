@@ -706,27 +706,3 @@ def execute_cmd(cmd: str) -> None:
             err.stderr,
         )
         raise
-
-
-def get_last_folder(folder_path: Path) -> Path:
-    """
-    Get the upload folder
-    :param folder_path: upload folder
-    :return: Path
-    """
-    suffix = "*.tif"
-    list_files = list(folder_path.rglob(suffix))
-    parent_list = []
-    for el in list_files:
-        parent_list.append(el.parent)
-    # Remove duplicates
-    parent_list = list(set(parent_list))
-    if len(parent_list) == 1:
-        parent_folder = str(parent_list[0])
-        root_folder = str(folder_path)
-        return parent_folder.replace(root_folder, "")
-    else:
-        logger.warning("Found multiple nested folders, something is wrong")
-        parent_folder = str(parent_list[0])
-        root_folder = str(folder_path)
-        return parent_folder.replace(root_folder, "")
