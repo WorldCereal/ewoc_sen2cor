@@ -350,7 +350,7 @@ def raster_to_ard(
                 )
                 meta_xml_file = raster_path.parents[2] / "product/metadata.xml"
                 raster_array = apply_offset(
-                    raster_array, meta_xml_file, str(band_id[band_num])
+                    raster_array, str(meta_xml_file), str(band_id[band_num])
                 )
 
             meta = src.meta.copy()
