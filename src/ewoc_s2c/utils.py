@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-from typing import List, Tuple
+from typing import List, Tuple, Generator
 import uuid
 import xml.etree.ElementTree as ET
 
@@ -676,7 +676,7 @@ def set_sen2cor_log(loglevel: str) -> None:
     logger.info(f"Edited sen2cor loglevel to {loglevel}")
 
 
-def walk(path: Path) -> None:
+def walk(path: Path) -> Generator:
     """
     Recursively traverse all files from a directory.
     :param path: Directory path
