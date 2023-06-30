@@ -50,6 +50,7 @@ jobs:
     - name: Analysing the code with mypy
       run: |
         python -m pip install boto3-stubs
+        python -m pip install lxml-stubs
         python -m pip install mypy
         python -m pip install "nptyping<2"
         mypy src
