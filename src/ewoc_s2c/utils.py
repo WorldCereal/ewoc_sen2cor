@@ -16,7 +16,6 @@ from ewoc_dag.bucket.ewoc import EWOCARDBucket
 from ewoc_dag.cli_dem import get_dem_data
 from ewoc_dag.eo_prd_id.s2_prd_id import S2PrdIdInfo
 from ewoc_dag.srtm_dag import get_srtm3s_ids
-import lxml.etree as ET
 from nptyping import NDArray
 import numpy as np
 import rasterio
@@ -112,8 +111,12 @@ def scl_to_ard(work_dir: Path, prod_name: str) -> None:
 def retrieve_offset_from_meta(meta_xml_file: str, band_id: str) -> int:
     tree = ET.parse(meta_xml_file)
     root = tree.getroot()
-    offset_band = root.find(f'.//BOA_ADD_OFFSET[@band_id="{band_id}"]').text
-    offset_band = int(offset_band)
+    #offset_band = root.find(f'.//BOA_ADD_OFFSET[@band_id="{band_id}"]').text
+    offset_band_elt = root.find(f'.//BOA_ADD_OFFSET[@band_id="{band_id}"]')
+    if offset_band_elt:
+        offset_band_str=str(offset_band_elt.text)
+        offset_band = int(offset_band_str)
+    #offset_band = int(offset_band)
     return offset_band
 
 
