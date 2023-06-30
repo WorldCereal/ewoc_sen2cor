@@ -564,11 +564,12 @@ def custom_s2c_dem(dem_type: str, tile_id: str) -> Tuple[Path, List]:
     dem_tmp_dir.mkdir(exist_ok=False, parents=True)
     # Clear the folder from tiles remaining from previous runs
     s2c_docker_dem_folder = f"/root/sen2cor/2.9/dem/{dem_type}"
-    if os.path.exists(s2c_docker_dem_folder):
-        clean(s2c_docker_dem_folder)
+    s2c_docker_dem_path = Path(f"/root/sen2cor/2.9/dem/{dem_type}")
+    if s2c_docker_dem_path.exists():
+        clean(s2c_docker_dem_path)
         logger.info("/root/sen2cor/2.9/dem/%s --> clean (deleted)", dem_type)
     # Create (back) the dem folder
-    os.makedirs(s2c_docker_dem_folder)
+    s2c_docker_dem_path.mkdir(parents=True)
     logger.info("/root/sen2cor/2.9/dem/%s --> created", dem_type)
     # Download the dem files
     if dem_type == "srtm":
