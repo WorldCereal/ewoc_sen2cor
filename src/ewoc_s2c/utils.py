@@ -1,26 +1,24 @@
 """ EWoC Sen2Cor utils module"""
-
+from datetime import datetime
 import glob
 import logging
 import os
+from pathlib import Path
 import shutil
 import subprocess
 import sys
+from typing import List, Tuple, Generator
 import uuid
 import xml.etree.ElementTree as ET
-from datetime import datetime
-from pathlib import Path
-from typing import List, Tuple
 
 import boto3.exceptions
-import lxml.etree as ET
-import numpy as np
-import rasterio
 from ewoc_dag.bucket.ewoc import EWOCARDBucket
 from ewoc_dag.cli_dem import get_dem_data
 from ewoc_dag.eo_prd_id.s2_prd_id import S2PrdIdInfo
 from ewoc_dag.srtm_dag import get_srtm3s_ids
 from nptyping import NDArray
+import numpy as np
+import rasterio
 from rasterio.merge import merge
 
 from ewoc_s2c import __version__
@@ -113,8 +111,12 @@ def scl_to_ard(work_dir: Path, prod_name: str) -> None:
 def retrieve_offset_from_meta(meta_xml_file: str, band_id: str) -> int:
     tree = ET.parse(meta_xml_file)
     root = tree.getroot()
-    offset_band = root.find(f'.//BOA_ADD_OFFSET[@band_id="{band_id}"]').text
-    offset_band = int(offset_band)
+    #offset_band = root.find(f'.//BOA_ADD_OFFSET[@band_id="{band_id}"]').text
+    offset_band_elt = root.find(f'.//BOA_ADD_OFFSET[@band_id="{band_id}"]')
+    if offset_band_elt:
+        offset_band_str=str(offset_band_elt.text)
+        offset_band = int(offset_band_str)
+    #offset_band = int(offset_band)
     return offset_band
 
 
@@ -351,7 +353,7 @@ def raster_to_ard(
                 )
                 meta_xml_file = raster_path.parents[2] / "product/metadata.xml"
                 raster_array = apply_offset(
-                    raster_array, meta_xml_file, str(band_id[band_num])
+                    raster_array, str(meta_xml_file), str(band_id[band_num])
                 )
 
             meta = src.meta.copy()
@@ -565,11 +567,12 @@ def custom_s2c_dem(dem_type: str, tile_id: str) -> Tuple[Path, List]:
     dem_tmp_dir.mkdir(exist_ok=False, parents=True)
     # Clear the folder from tiles remaining from previous runs
     s2c_docker_dem_folder = f"/root/sen2cor/2.9/dem/{dem_type}"
-    if os.path.exists(s2c_docker_dem_folder):
-        clean(s2c_docker_dem_folder)
+    s2c_docker_dem_path = Path(f"/root/sen2cor/2.9/dem/{dem_type}")
+    if s2c_docker_dem_path.exists():
+        clean(s2c_docker_dem_path)
         logger.info("/root/sen2cor/2.9/dem/%s --> clean (deleted)", dem_type)
     # Create (back) the dem folder
-    os.makedirs(s2c_docker_dem_folder)
+    s2c_docker_dem_path.mkdir(parents=True)
     logger.info("/root/sen2cor/2.9/dem/%s --> created", dem_type)
     # Download the dem files
     if dem_type == "srtm":
@@ -676,7 +679,7 @@ def set_sen2cor_log(loglevel: str) -> None:
     logger.info(f"Edited sen2cor loglevel to {loglevel}")
 
 
-def walk(path: Path) -> None:
+def walk(path: Path) -> Generator:
     """
     Recursively traverse all files from a directory.
     :param path: Directory path
@@ -707,27 +710,3 @@ def execute_cmd(cmd: str) -> None:
             err.stderr,
         )
         raise
-
-
-def get_last_folder(folder_path: Path) -> Path:
-    """
-    Get the upload folder
-    :param folder_path: upload folder
-    :return: Path
-    """
-    suffix = "*.tif"
-    list_files = list(folder_path.rglob(suffix))
-    parent_list = []
-    for el in list_files:
-        parent_list.append(el.parent)
-    # Remove duplicates
-    parent_list = list(set(parent_list))
-    if len(parent_list) == 1:
-        parent_folder = str(parent_list[0])
-        root_folder = str(folder_path)
-        return parent_folder.replace(root_folder, "")
-    else:
-        logger.warning("Found multiple nested folders, something is wrong")
-        parent_folder = str(parent_list[0])
-        root_folder = str(folder_path)
-        return parent_folder.replace(root_folder, "")
